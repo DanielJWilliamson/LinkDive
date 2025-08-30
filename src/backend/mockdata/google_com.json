@@ -1,0 +1,150 @@
+{
+  "target_url": "https://www.google.com",
+  "target_domain": "google.com",
+  "total_backlinks": 45782934,
+  "referring_domains": 1247890,
+  "dofollow_backlinks": 32047554,
+  "nofollow_backlinks": 13735380,
+  "average_domain_rating": 100.0,
+  "anchor_text_distribution": {
+    "Google": 12847293,
+    "google.com": 8934782,
+    "search": 4567890,
+    "Google Search": 3892456,
+    "click here": 2134567,
+    "search engine": 1890234,
+    "Google Inc": 1567890,
+    "homepage": 1234567,
+    "search Google": 987654,
+    "Google.com": 789456,
+    "visit Google": 567890,
+    "web search": 456789,
+    "internet search": 345678,
+    "find": 234567,
+    "lookup": 123456
+  },
+  "last_analyzed": "2024-12-19T10:20:00Z",
+  "top_referring_domains": [
+    {
+      "domain": "wikipedia.org",
+      "domain_rating": 96.8,
+      "backlinks": 89234,
+      "first_seen": "2001-01-15",
+      "last_seen": "2024-12-19",
+      "anchor_texts": ["Google", "Google Search", "search engine"],
+      "url_rating": 94.2,
+      "traffic": 1800000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "youtube.com",
+      "domain_rating": 99.8,
+      "backlinks": 156789,
+      "first_seen": "2005-02-14",
+      "last_seen": "2024-12-19",
+      "anchor_texts": ["Google", "parent company"],
+      "url_rating": 97.2,
+      "traffic": 3400000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "facebook.com",
+      "domain_rating": 100.0,
+      "backlinks": 67890,
+      "first_seen": "2004-02-04",
+      "last_seen": "2024-12-18",
+      "anchor_texts": ["Google", "search Google"],
+      "url_rating": 98.3,
+      "traffic": 2500000000,
+      "link_type": "nofollow"
+    },
+    {
+      "domain": "twitter.com",
+      "domain_rating": 99.1,
+      "backlinks": 234567,
+      "first_seen": "2006-03-21",
+      "last_seen": "2024-12-18",
+      "anchor_texts": ["Google", "@Google"],
+      "url_rating": 96.8,
+      "traffic": 1800000000,
+      "link_type": "nofollow"
+    },
+    {
+      "domain": "microsoft.com",
+      "domain_rating": 95.7,
+      "backlinks": 23456,
+      "first_seen": "1998-09-04",
+      "last_seen": "2024-12-17",
+      "anchor_texts": ["Google", "search competitor"],
+      "url_rating": 93.4,
+      "traffic": 890000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "apple.com",
+      "domain_rating": 94.8,
+      "backlinks": 18934,
+      "first_seen": "2000-05-19",
+      "last_seen": "2024-12-16",
+      "anchor_texts": ["Google", "search partner"],
+      "url_rating": 92.1,
+      "traffic": 567000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "amazon.com",
+      "domain_rating": 96.2,
+      "backlinks": 34567,
+      "first_seen": "1995-07-05",
+      "last_seen": "2024-12-15",
+      "anchor_texts": ["Google", "search Amazon"],
+      "url_rating": 94.7,
+      "traffic": 2100000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "github.com",
+      "domain_rating": 96.9,
+      "backlinks": 456789,
+      "first_seen": "2008-04-10",
+      "last_seen": "2024-12-19",
+      "anchor_texts": ["Google", "Google APIs", "Google developers"],
+      "url_rating": 94.8,
+      "traffic": 890000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "stackoverflow.com",
+      "domain_rating": 95.1,
+      "backlinks": 789456,
+      "first_seen": "2008-09-15",
+      "last_seen": "2024-12-19",
+      "anchor_texts": ["Google", "Google APIs", "search"],
+      "url_rating": 92.7,
+      "traffic": 1200000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "linkedin.com",
+      "domain_rating": 98.2,
+      "backlinks": 123456,
+      "first_seen": "2003-05-05",
+      "last_seen": "2024-12-18",
+      "anchor_texts": ["Google", "Google Inc", "Alphabet"],
+      "url_rating": 95.7,
+      "traffic": 890000000,
+      "link_type": "nofollow"
+    }
+  ],
+  "link_types": {
+    "text": 32047554,
+    "image": 8934782,
+    "redirect": 4800598
+  },
+  "new_backlinks_last_30_days": 234567,
+  "lost_backlinks_last_30_days": 23456,
+  "growth_trend": "positive",
+  "spam_score": 0.1,
+  "toxic_backlinks": 234,
+  "broken_backlinks": 12345
+}

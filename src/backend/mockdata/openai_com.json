@@ -1,0 +1,150 @@
+{
+  "target_url": "https://www.openai.com",
+  "target_domain": "openai.com",
+  "total_backlinks": 287456,
+  "referring_domains": 8934,
+  "dofollow_backlinks": 201234,
+  "nofollow_backlinks": 86222,
+  "average_domain_rating": 89.3,
+  "anchor_text_distribution": {
+    "OpenAI": 67890,
+    "ChatGPT": 45678,
+    "artificial intelligence": 23456,
+    "AI": 34567,
+    "machine learning": 18934,
+    "GPT": 15678,
+    "OpenAI API": 12345,
+    "AI research": 9876,
+    "neural networks": 7890,
+    "deep learning": 6789,
+    "language model": 5678,
+    "click here": 4567,
+    "read more": 3456,
+    "AI company": 2345,
+    "visit OpenAI": 1234
+  },
+  "last_analyzed": "2024-12-19T10:15:00Z",
+  "top_referring_domains": [
+    {
+      "domain": "github.com",
+      "domain_rating": 96.9,
+      "backlinks": 12890,
+      "first_seen": "2019-06-11",
+      "last_seen": "2024-12-19",
+      "anchor_texts": ["OpenAI", "OpenAI API", "GPT"],
+      "url_rating": 94.8,
+      "traffic": 890000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "arxiv.org",
+      "domain_rating": 82.7,
+      "backlinks": 8934,
+      "first_seen": "2018-12-05",
+      "last_seen": "2024-12-18",
+      "anchor_texts": ["OpenAI", "AI research", "neural networks"],
+      "url_rating": 79.4,
+      "traffic": 120000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "techcrunch.com",
+      "domain_rating": 92.1,
+      "backlinks": 3456,
+      "first_seen": "2020-02-14",
+      "last_seen": "2024-12-17",
+      "anchor_texts": ["OpenAI", "ChatGPT", "AI startup"],
+      "url_rating": 89.7,
+      "traffic": 450000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "news.ycombinator.com",
+      "domain_rating": 85.3,
+      "backlinks": 5678,
+      "first_seen": "2019-03-22",
+      "last_seen": "2024-12-16",
+      "anchor_texts": ["OpenAI", "GPT discussion"],
+      "url_rating": 82.9,
+      "traffic": 67000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "reddit.com",
+      "domain_rating": 96.4,
+      "backlinks": 15678,
+      "first_seen": "2020-05-18",
+      "last_seen": "2024-12-19",
+      "anchor_texts": ["OpenAI", "ChatGPT", "AI discussion"],
+      "url_rating": 93.8,
+      "traffic": 1800000000,
+      "link_type": "nofollow"
+    },
+    {
+      "domain": "wikipedia.org",
+      "domain_rating": 96.8,
+      "backlinks": 234,
+      "first_seen": "2021-01-10",
+      "last_seen": "2024-12-15",
+      "anchor_texts": ["OpenAI", "artificial intelligence company"],
+      "url_rating": 94.2,
+      "traffic": 1800000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "medium.com",
+      "domain_rating": 94.2,
+      "backlinks": 7890,
+      "first_seen": "2019-09-07",
+      "last_seen": "2024-12-14",
+      "anchor_texts": ["OpenAI", "AI article", "machine learning"],
+      "url_rating": 91.6,
+      "traffic": 890000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "twitter.com",
+      "domain_rating": 99.1,
+      "backlinks": 23456,
+      "first_seen": "2018-04-15",
+      "last_seen": "2024-12-18",
+      "anchor_texts": ["@OpenAI", "OpenAI Twitter"],
+      "url_rating": 96.8,
+      "traffic": 1800000000,
+      "link_type": "nofollow"
+    },
+    {
+      "domain": "youtube.com",
+      "domain_rating": 99.8,
+      "backlinks": 4567,
+      "first_seen": "2020-08-20",
+      "last_seen": "2024-12-13",
+      "anchor_texts": ["OpenAI", "ChatGPT demo", "AI videos"],
+      "url_rating": 97.2,
+      "traffic": 3400000000,
+      "link_type": "nofollow"
+    },
+    {
+      "domain": "theverge.com",
+      "domain_rating": 91.7,
+      "backlinks": 2890,
+      "first_seen": "2021-11-30",
+      "last_seen": "2024-12-12",
+      "anchor_texts": ["OpenAI", "ChatGPT news"],
+      "url_rating": 88.4,
+      "traffic": 234000000,
+      "link_type": "dofollow"
+    }
+  ],
+  "link_types": {
+    "text": 201234,
+    "image": 45678,
+    "redirect": 40544
+  },
+  "new_backlinks_last_30_days": 15670,
+  "lost_backlinks_last_30_days": 890,
+  "growth_trend": "positive",
+  "spam_score": 1.2,
+  "toxic_backlinks": 45,
+  "broken_backlinks": 567
+}

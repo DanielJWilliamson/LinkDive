@@ -1,0 +1,150 @@
+{
+  "target_url": "https://www.microsoft.com",
+  "target_domain": "microsoft.com",
+  "total_backlinks": 23456789,
+  "referring_domains": 567890,
+  "dofollow_backlinks": 16420352,
+  "nofollow_backlinks": 7036437,
+  "average_domain_rating": 95.7,
+  "anchor_text_distribution": {
+    "Microsoft": 5678901,
+    "microsoft.com": 3456789,
+    "Windows": 2345678,
+    "Office": 1890234,
+    "Azure": 1567890,
+    "Microsoft Office": 1234567,
+    "click here": 987654,
+    "download": 789456,
+    "Microsoft Windows": 567890,
+    "software": 456789,
+    "technology": 345678,
+    "visit site": 234567,
+    "learn more": 189023,
+    "Microsoft Azure": 156789,
+    "cloud computing": 123456
+  },
+  "last_analyzed": "2024-12-19T10:10:00Z",
+  "top_referring_domains": [
+    {
+      "domain": "github.com",
+      "domain_rating": 96.9,
+      "backlinks": 234567,
+      "first_seen": "2008-04-10",
+      "last_seen": "2024-12-19",
+      "anchor_texts": ["Microsoft", "Microsoft GitHub", "open source"],
+      "url_rating": 94.8,
+      "traffic": 890000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "stackoverflow.com",
+      "domain_rating": 95.1,
+      "backlinks": 456789,
+      "first_seen": "2008-09-15",
+      "last_seen": "2024-12-19",
+      "anchor_texts": ["Microsoft", "Microsoft documentation", "Windows"],
+      "url_rating": 92.7,
+      "traffic": 1200000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "wikipedia.org",
+      "domain_rating": 96.8,
+      "backlinks": 12345,
+      "first_seen": "2001-01-15",
+      "last_seen": "2024-12-18",
+      "anchor_texts": ["Microsoft", "Microsoft Corporation", "technology company"],
+      "url_rating": 94.2,
+      "traffic": 1800000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "linkedin.com",
+      "domain_rating": 98.2,
+      "backlinks": 189023,
+      "first_seen": "2003-05-05",
+      "last_seen": "2024-12-18",
+      "anchor_texts": ["Microsoft", "Microsoft Corporation", "employer"],
+      "url_rating": 95.7,
+      "traffic": 890000000,
+      "link_type": "nofollow"
+    },
+    {
+      "domain": "technet.microsoft.com",
+      "domain_rating": 88.4,
+      "backlinks": 345678,
+      "first_seen": "2001-07-17",
+      "last_seen": "2024-12-17",
+      "anchor_texts": ["Microsoft", "technical documentation"],
+      "url_rating": 85.9,
+      "traffic": 45000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "docs.microsoft.com",
+      "domain_rating": 89.7,
+      "backlinks": 567890,
+      "first_seen": "2016-11-02",
+      "last_seen": "2024-12-19",
+      "anchor_texts": ["Microsoft", "documentation", "developer docs"],
+      "url_rating": 87.3,
+      "traffic": 120000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "azure.microsoft.com",
+      "domain_rating": 92.1,
+      "backlinks": 123456,
+      "first_seen": "2010-02-01",
+      "last_seen": "2024-12-18",
+      "anchor_texts": ["Microsoft", "Azure", "cloud platform"],
+      "url_rating": 89.8,
+      "traffic": 67000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "office.com",
+      "domain_rating": 91.3,
+      "backlinks": 78901,
+      "first_seen": "2011-06-28",
+      "last_seen": "2024-12-16",
+      "anchor_texts": ["Microsoft", "Office 365", "productivity"],
+      "url_rating": 88.7,
+      "traffic": 234000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "support.microsoft.com",
+      "domain_rating": 87.2,
+      "backlinks": 234567,
+      "first_seen": "1999-05-12",
+      "last_seen": "2024-12-15",
+      "anchor_texts": ["Microsoft", "support", "help"],
+      "url_rating": 84.6,
+      "traffic": 89000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "news.microsoft.com",
+      "domain_rating": 85.8,
+      "backlinks": 45678,
+      "first_seen": "2014-09-30",
+      "last_seen": "2024-12-14",
+      "anchor_texts": ["Microsoft", "Microsoft news", "announcements"],
+      "url_rating": 83.2,
+      "traffic": 23000000,
+      "link_type": "dofollow"
+    }
+  ],
+  "link_types": {
+    "text": 16420352,
+    "image": 4691118,
+    "redirect": 2345319
+  },
+  "new_backlinks_last_30_days": 67890,
+  "lost_backlinks_last_30_days": 12345,
+  "growth_trend": "positive",
+  "spam_score": 0.3,
+  "toxic_backlinks": 123,
+  "broken_backlinks": 5678
+}

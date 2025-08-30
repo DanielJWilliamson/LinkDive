@@ -1,0 +1,128 @@
+{
+  "target_url": "https://www.example.com",
+  "target_domain": "example.com",
+  "total_backlinks": 89247,
+  "referring_domains": 2847,
+  "dofollow_backlinks": 62834,
+  "nofollow_backlinks": 26413,
+  "average_domain_rating": 92.7,
+  "anchor_text_distribution": {
+    "example": 15234,
+    "example.com": 12890,
+    "click here": 8756,
+    "visit site": 6234,
+    "more info": 4567,
+    "example domain": 3892,
+    "test site": 2134,
+    "demo": 1890,
+    "sample": 1567,
+    "placeholder": 1234,
+    "documentation": 2890,
+    "reference": 1789,
+    "link": 987,
+    "website": 2345,
+    "domain example": 1098
+  },
+  "last_analyzed": "2024-12-19T10:25:00Z",
+  "top_referring_domains": [
+    {
+      "domain": "wikipedia.org",
+      "domain_rating": 96.8,
+      "backlinks": 1247,
+      "first_seen": "2004-08-15",
+      "last_seen": "2024-12-18",
+      "anchor_texts": ["example.com", "example domain", "placeholder domain"],
+      "url_rating": 94.2,
+      "traffic": 1800000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "ietf.org",
+      "domain_rating": 89.4,
+      "backlinks": 892,
+      "first_seen": "1999-12-03",
+      "last_seen": "2024-12-17",
+      "anchor_texts": ["example.com", "RFC documentation"],
+      "url_rating": 87.6,
+      "traffic": 25000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "w3.org",
+      "domain_rating": 91.2,
+      "backlinks": 567,
+      "first_seen": "2001-03-22",
+      "last_seen": "2024-12-16",
+      "anchor_texts": ["example domain", "web standards"],
+      "url_rating": 89.8,
+      "traffic": 45000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "stackoverflow.com",
+      "domain_rating": 95.1,
+      "backlinks": 2834,
+      "first_seen": "2008-09-15",
+      "last_seen": "2024-12-19",
+      "anchor_texts": ["example.com", "code example", "demo site"],
+      "url_rating": 92.7,
+      "traffic": 1200000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "github.com",
+      "domain_rating": 96.9,
+      "backlinks": 1892,
+      "first_seen": "2010-04-10",
+      "last_seen": "2024-12-18",
+      "anchor_texts": ["example.com", "documentation", "readme"],
+      "url_rating": 94.8,
+      "traffic": 890000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "mozilla.org",
+      "domain_rating": 88.7,
+      "backlinks": 445,
+      "first_seen": "2003-07-15",
+      "last_seen": "2024-12-15",
+      "anchor_texts": ["example domain", "web development"],
+      "url_rating": 86.3,
+      "traffic": 150000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "rfc-editor.org",
+      "domain_rating": 82.1,
+      "backlinks": 334,
+      "first_seen": "2002-11-08",
+      "last_seen": "2024-12-14",
+      "anchor_texts": ["example.com", "RFC reference"],
+      "url_rating": 79.8,
+      "traffic": 8000000,
+      "link_type": "dofollow"
+    },
+    {
+      "domain": "iana.org",
+      "domain_rating": 85.9,
+      "backlinks": 287,
+      "first_seen": "2000-05-12",
+      "last_seen": "2024-12-13",
+      "anchor_texts": ["example domain", "reserved domain"],
+      "url_rating": 83.4,
+      "traffic": 15000000,
+      "link_type": "dofollow"
+    }
+  ],
+  "link_types": {
+    "text": 62834,
+    "image": 15678,
+    "redirect": 10735
+  },
+  "new_backlinks_last_30_days": 1247,
+  "lost_backlinks_last_30_days": 234,
+  "growth_trend": "positive",
+  "spam_score": 0.5,
+  "toxic_backlinks": 12,
+  "broken_backlinks": 345
+}
