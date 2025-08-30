@@ -1,23 +1,46 @@
-# Link Dive AI - SEO Backlink Analysis Platform
+# LinkDive AI - Digital PR Campaign Monitoring Platform
 
-A comprehensive SEO analysis tool that aggregates backlink data from multiple premium sources (Ahrefs and DataForSEO APIs) to provide actionable insights for link building and competitor analysis.
+**Automatically discover and monitor all potential online media coverage of your Digital PR campaigns.**
 
-## ✨ Features
+LinkDive AI is an intelligent campaign monitoring tool that helps PR agencies and digital marketers track the success of their campaigns by automatically discovering when their content has been mentioned, linked to, or covered across the web. The platform combines multiple data sources and AI-powered content verification to provide comprehensive coverage reporting.
 
-- **Multi-API Integration**: Combines Ahrefs and DataForSEO data for comprehensive analysis
-- **Backlink Analysis**: Deep dive into domain backlink profiles and quality metrics
-- **Competitor Intelligence**: Gap analysis and link building opportunities
-- **Risk Assessment**: Identify potentially toxic or harmful backlinks
-- **Real-time Analysis**: Fast, async processing with intelligent caching
-- **Interactive API**: Auto-generated documentation with live testing interface
+## 🎯 What LinkDive Does
+
+### For PR Agencies & Digital Marketers
+- **Campaign Setup**: Create monitoring campaigns with target URLs, keywords, and verification parameters
+- **Automatic Discovery**: AI continuously scans the web for potential coverage of your campaigns
+- **Content Verification**: Smart keyword matching and content analysis to verify actual coverage
+- **Coverage Reporting**: Export verified coverage for client reports and status updates
+
+### The Campaign Process
+1. **Create Campaign**: Set up monitoring for a specific PR campaign with target URLs and keywords
+2. **AI Discovery**: System automatically finds potential coverage using Ahrefs and DataForSEO APIs
+3. **Content Verification**: AI analyzes discovered content to verify if it actually covers your campaign  
+4. **Report Generation**: Review, select, and export verified coverage for client reporting
+
+### What You Get
+- **Verified Coverage**: Direct backlinks to your campaign URLs with full metadata
+- **Potential Coverage**: Articles mentioning your campaign that don't link directly
+- **SERP Monitoring**: Track how your campaign URLs perform in Google search results
+- **Professional Reports**: Export coverage data for client presentations and status reports
+
+## ✨ Key Features
+
+- **Multi-Source Discovery**: Integrates Ahrefs and DataForSEO APIs for comprehensive coverage detection
+- **AI Content Verification**: Smart keyword matching to verify actual campaign coverage
+- **24/7 Monitoring**: Automated monitoring during business hours (7am-7pm UK time, Mon-Fri)
+- **Campaign Management**: Intuitive 3-step campaign creation with keyword and domain configuration
+- **Professional Reporting**: Export verified coverage for client reports and presentations
+- **Google OAuth Security**: Secure authentication with development access for testing
 
 ## 🚀 Technology Stack
 
 - **Backend**: FastAPI (Python) - Modern, high-performance async web framework
-- **Frontend**: React 18 with TypeScript *(coming next)*
-- **Database**: PostgreSQL with Redis caching *(planned)*
-- **APIs**: Ahrefs API, DataForSEO API - Premium SEO data sources
-- **Documentation**: Auto-generated interactive API docs
+- **Frontend**: Next.js 15 with TypeScript and Tailwind CSS
+- **Database**: SQLite for development, PostgreSQL-ready for production
+- **Authentication**: NextAuth.js with Google OAuth and admin backdoor
+- **APIs**: Ahrefs API, DataForSEO API - Premium SEO and backlink data sources
+- **Monitoring**: Background task processing with intelligent scheduling
 
 ## 🏗️ Project Structure
 
@@ -51,6 +74,53 @@ LinkDive/
 ├── .gitignore                   # Git ignore rules
 └── README.md                    # This file
 ```
+
+## 🎯 Campaign Monitoring Value
+
+### Why Use LinkDive for PR Campaigns?
+
+**Problem**: PR agencies spend countless hours manually searching for campaign coverage across the web, often missing mentions and struggling to prove ROI to clients.
+
+**Solution**: LinkDive automatically monitors the entire web for your campaign coverage, providing:
+
+- ⚡ **Time Savings**: Eliminate manual coverage hunting - get automatic discovery
+- 📊 **Comprehensive Tracking**: Never miss coverage again with multi-source monitoring  
+- 🎯 **Verified Results**: AI distinguishes between actual coverage and false positives
+- 📈 **Client Reporting**: Professional coverage reports ready for client presentations
+- 🔄 **Continuous Monitoring**: 24/7 discovery during business hours with daily updates
+
+### Campaign Outcomes
+
+Each campaign you create will deliver:
+
+1. **Verified Coverage List**: Direct backlinks to your campaign URLs with metadata
+2. **Potential Coverage Discovery**: Articles mentioning your campaign without direct links
+3. **SERP Performance**: Track how your URLs rank for target keywords
+4. **Professional Reports**: Export-ready coverage data for client deliverables
+5. **ROI Demonstration**: Clear metrics showing campaign reach and impact
+
+## 🚀 Current Development Status
+
+✅ **Completed Features:**
+- Campaign creation workflow (3-step process)
+- User authentication (Google OAuth + admin backdoor)
+- Campaign management dashboard
+- Database schema and API endpoints
+- Professional UI with responsive design
+
+🚧 **In Development:**
+- Campaign submission validation fixes
+- Ahrefs API integration for verified coverage
+- DataForSEO API integration for potential coverage discovery
+- Content verification and keyword matching
+- SERP monitoring and reporting features
+
+📋 **Planned Features:**
+- Automated daily monitoring (7am-7pm UK time)
+- Coverage export and client reporting
+- Real-time notifications via Slack
+- Advanced content analysis with AI
+- Campaign performance analytics
 
 ## 🚀 Quick Start
 
@@ -106,21 +176,62 @@ Once the server is running, explore the interactive documentation:
 ### Frontend - Login Page
 ![LinkDive Login](docs/images/linkdive-login-page.png)
 
-*Secure authentication with Google OAuth. For testing purposes, you can use "admin" as the email to bypass domain restrictions.*
+*Secure authentication with Google OAuth and development backdoor. Click "Show development access" and enter "admin" for testing.*
 
-### Backend - API Documentation
+### Frontend - Campaign Dashboard
+![LinkDive Dashboard](docs/images/campaign-dashboard.png)
+
+*Main campaign management dashboard showing empty state with options to create new campaigns. User is authenticated as "Admin User (Development)".*
+
+### Frontend - Campaign Creation Process
+
+#### Step 1: Basic Information
+![Campaign Creation Step 1](docs/images/campaign-creation-step1.png)
+
+*Campaign creation form - Step 1: Enter basic campaign details including client name, campaign name, domain, and optional URL and launch date.*
+
+#### Step 2: Keywords Configuration
+![Campaign Creation Step 2](docs/images/campaign-creation-step2.png)
+
+*Campaign creation form - Step 2: Configure SERP monitoring keywords and coverage verification keywords for comprehensive tracking.*
+
+#### Step 3: Settings & Summary
+![Campaign Creation Step 3](docs/images/campaign-creation-step3.png)
+
+*Campaign creation form - Step 3: Optional domain blacklist configuration and campaign summary review before creation.*
+
+### Frontend - Connection Error Handling
+![LinkDive Connection Error](docs/images/linkdive-connection-error.png)
+
+*Graceful error handling when backend services are unavailable, with clear user messaging.*
+
+### Backend - API Documentation Overview
 ![LinkDive API Documentation](docs/images/linkdive-api-docs.png)
 
 *Comprehensive FastAPI documentation with interactive testing interface available at http://localhost:8000/docs*
 
+### Backend - Detailed API Endpoint
+![LinkDive API Backlinks Detail](docs/images/linkdive-api-backlinks-detail.png)
+
+*Detailed view of the backlinks analysis endpoint showing request/response schemas, parameters, and example data structures.*
+
 ## 🔐 Authentication
 
-The application uses NextAuth.js with Google OAuth for secure authentication. Access is restricted to:
+The application uses NextAuth.js with multiple authentication providers:
 
-- **Production**: `@linkdive.ai` email addresses only
-- **Testing/Development**: Use `"admin"` as the email for backdoor access (no actual Google account needed)
+### Production Authentication
+- **Google OAuth**: Restricted to `@linkdive.ai` email addresses only
+- Secure domain-based access control
 
-This backdoor allows developers and testers to quickly access the application without needing a specific domain email.
+### Development/Testing Authentication  
+- **Admin Backdoor**: Click "Show development access" on the login page
+- Enter `"admin"` in the email field and click "Development Sign In"
+- **No Google account required** - bypasses OAuth entirely for testing
+
+This dual authentication system allows:
+- ✅ **Secure production access** via Google OAuth with domain restrictions
+- ✅ **Easy development testing** without needing domain-specific email accounts
+- ✅ **Quick demo access** for showcasing the platform
 
 ## 🧪 Testing the API
 

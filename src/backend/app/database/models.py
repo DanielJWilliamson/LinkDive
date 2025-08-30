@@ -4,7 +4,7 @@ Database models for Link Dive AI campaigns and analysis results
 from sqlalchemy import Column, Integer, String, Text, DateTime, Date, Boolean, DECIMAL, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.database.database import Base
+from app.core.database import Base
 
 class Campaign(Base):
     """Campaign model for storing PR campaign information"""

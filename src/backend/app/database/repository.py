@@ -6,7 +6,7 @@ from datetime import date, datetime
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_
 
-from app.database.database import get_db
+from app.core.database import get_db
 from app.database.models import Campaign, CampaignKeyword, DomainBlacklist, BacklinkResult, SerpRanking
 from app.models.campaign import CampaignData, CampaignSearchRequest
 

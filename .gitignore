@@ -4,6 +4,11 @@
 TaskOverview/
 Markdowns/
 
+# Browser automation and testing
+.playwright-mcp/
+playwright-report/
+test-results/
+
 # Environment variables and sensitive configuration
 .env
 .env.*

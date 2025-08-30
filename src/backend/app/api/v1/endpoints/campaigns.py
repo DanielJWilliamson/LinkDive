@@ -12,7 +12,7 @@ from app.models.campaign import (
     CampaignResponse,
     CampaignResultsResponse
 )
-from app.database.database import get_db
+from app.core.database import get_db
 from app.database.repository import CampaignRepository, campaign_to_dict
 from app.services.campaign_service import campaign_service
 
