@@ -317,10 +317,6 @@ REDIS_URL=redis://localhost:6379/0
 
 ## 📞 Contact & Support
 
-**Project**: LinkDive - SEO Backlink Analysis Platform  
-**Contact**: tools@linkdive.ai  
-**Company**: [LinkDive](http://linkdive.ai)
-
----
+For questions, support, or to request a demo, contact:---
 
 *Built with ❤️ as a comprehensive SEO analysis platform. This demonstrates a production-ready FastAPI backend with comprehensive SEO analysis capabilities.*
