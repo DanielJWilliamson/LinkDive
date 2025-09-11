@@ -179,14 +179,14 @@ Once the server is running, explore the interactive documentation:
 *Secure authentication with Google OAuth and development backdoor. Click "Show development access" and enter "admin" for testing.*
 
 ### Frontend - Campaign Dashboard
-![LinkDive Dashboard](docs/images/campaign-dashboard.png)
+![LinkDive Dashboard](docs/images/campaigns-listed.png)
 
 *Main campaign management dashboard showing empty state with options to create new campaigns. User is authenticated as "Admin User (Development)".*
 
 ### Example – Campaigns Listed
 The dashboard now shows seeded/example campaigns out of the box when running in mock mode. Here is an example of campaigns listed in the UI:
 
-![Example Campaigns Listed](docs/images/campaign-dashboard.png)
+![Example Campaigns Listed](docs/images/campaigns-listed.png)
 
 Note: When Live mode is enabled and provider credentials don’t have the required scope/subscription, the UI will surface a short explainer in the Data Source Mode card and automatically fall back to Mock.
 
