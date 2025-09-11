@@ -310,9 +310,4 @@ async def background_service_health():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
 
-# Include a startup handler to start the background worker
-@router.on_event("startup")
-async def start_background_worker():
-    """Start background worker when the API starts"""
-    # Note: In production, this would be handled by the main application startup
-    pass
+# Startup handled by main application lifespan; legacy on_event removed.

@@ -3,7 +3,7 @@ API Router configuration for Link Dive AI v1 endpoints.
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import health, backlinks, analysis, campaigns
+from app.api.v1.endpoints import health, backlinks, analysis, campaigns, runtime_config
 
 # Create the main API router
 api_router = APIRouter()
@@ -13,3 +13,4 @@ api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(backlinks.router, prefix="/backlinks", tags=["backlinks"])
 api_router.include_router(analysis.router, prefix="/analysis", tags=["analysis"])
 api_router.include_router(campaigns.router, tags=["campaigns"])  # Note: no prefix for campaigns
+api_router.include_router(runtime_config.router)  # /runtime/config

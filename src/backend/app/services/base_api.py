@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
 import logging
 from datetime import datetime, timedelta
+from app.utils.datetime_utils import utc_now
 
 import httpx
 from httpx import AsyncClient, Response
@@ -64,8 +65,8 @@ class BaseAPIClient(ABC):
         request_headers = self._get_headers()
         if headers:
             request_headers.update(headers)
-        
-        start_time = datetime.utcnow()
+
+        start_time = utc_now()
         
         try:
             async with AsyncClient(timeout=self.timeout) as client:
@@ -77,7 +78,7 @@ class BaseAPIClient(ABC):
                     headers=request_headers
                 )
                 
-                end_time = datetime.utcnow()
+                end_time = utc_now()
                 response_time_ms = int((end_time - start_time).total_seconds() * 1000)
                 
                 # Log request
@@ -95,7 +96,7 @@ class BaseAPIClient(ABC):
                 data=None,
                 error="Request timeout",
                 response_time_ms=self.timeout * 1000,
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
                 source=self.__class__.__name__
             )
         except Exception as e:
@@ -105,13 +106,13 @@ class BaseAPIClient(ABC):
                 data=None,
                 error=str(e),
                 response_time_ms=0,
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
                 source=self.__class__.__name__
             )
     
     async def _apply_rate_limit(self):
         """Apply rate limiting before making requests."""
-        now = datetime.utcnow()
+        now = utc_now()
         cutoff = now - timedelta(minutes=1)
         
         # Remove old requests
@@ -129,7 +130,7 @@ class BaseAPIClient(ABC):
     
     async def _handle_response(self, response: Response, response_time_ms: int) -> APIResponse:
         """Handle HTTP response and convert to APIResponse."""
-        timestamp = datetime.utcnow()
+        timestamp = utc_now()
         source = self.__class__.__name__
         
         try:
@@ -204,7 +205,7 @@ class MockAPIClient(BaseAPIClient):
             success=True,
             data=mock_data,
             response_time_ms=100,
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             source="MockAPI"
         )
     
@@ -233,3 +234,97 @@ class MockAPIClient(BaseAPIClient):
             }
         else:
             return {"message": "Mock response", "endpoint": endpoint}
+
+    # --- Convenience mock methods used by analysis service ---
+    async def get_backlinks(self, domain: str, limit: int = 500) -> APIResponse:
+        """Return a deterministic set of mock backlinks for a domain (Ahrefs-like shape)."""
+        items: List[Dict[str, Any]] = []
+        now = utc_now()
+        base_domain = domain.replace("https://", "").replace("http://", "")
+        for i in range(min(limit, 25)):
+            items.append({
+                "url_from": f"https://ref{i}.{base_domain}/article/{i}",
+                "url_to": f"https://{base_domain}/page/{i%5}",
+                "anchor": f"reference {i}",
+                "domain_rating": 40 + (i % 60),
+                "url_rating": 30 + (i % 50),
+                "first_seen": (now.replace(microsecond=0)).isoformat(),
+                "last_seen": (now.replace(microsecond=0)).isoformat(),
+                "link_type": "dofollow" if i % 4 != 0 else "nofollow",
+                "is_redirect": False,
+                "is_canonical": False,
+                "is_alternate": False,
+            })
+        data = {"backlinks": items}
+        return APIResponse(
+            success=True,
+            data=data,
+            response_time_ms=50,
+            timestamp=utc_now(),
+            source=self.__class__.__name__,
+        )
+
+    async def get_referring_domains(self, domain: str, limit: int = 200) -> APIResponse:
+        """Return mock referring domains (Ahrefs-like shape)."""
+        items: List[Dict[str, Any]] = []
+        now = utc_now()
+        for i in range(min(limit, 15)):
+            items.append({
+                "domain": f"refdomain{i}.com",
+                "domain_rating": 35 + (i * 3),
+                "backlinks": 1 + (i % 7),
+                "first_seen": now.date().isoformat(),
+                "last_seen": now.date().isoformat(),
+                "dofollow": 1 + (i % 5),
+                "nofollow": i % 3,
+            })
+        data = {"refdomains": items}
+        return APIResponse(
+            success=True,
+            data=data,
+            response_time_ms=30,
+            timestamp=utc_now(),
+            source=self.__class__.__name__,
+        )
+
+    async def get_backlinks_detailed(self, domain: str, limit: int = 500) -> APIResponse:
+        """Return DataForSEO-shaped mock backlinks structure."""
+        base_domain = domain.replace("https://", "").replace("http://", "")
+        items: List[Dict[str, Any]] = []
+        now = utc_now()
+        for i in range(min(limit, 25)):
+            items.append({
+                "source_url": f"https://source{i}.example.com/path/{i}",
+                "target_url": f"https://{base_domain}/target/{i%7}",
+                "anchor": f"anchor {i}",
+                "domain_rank": 38 + (i % 55),
+                "page_rank": 20 + (i % 40),
+                "first_seen": now.date().isoformat(),
+                "last_seen": now.date().isoformat(),
+                "nofollow": (i % 5 == 0),
+                "redirect": False,
+            })
+        data = {"tasks": [{"result": [{"items": items}]}]}
+        return APIResponse(
+            success=True,
+            data=data,
+            response_time_ms=70,
+            timestamp=utc_now(),
+            source=self.__class__.__name__,
+        )
+
+    async def get_domain_overview(self, domain: str) -> APIResponse:
+        """Return a mock domain overview."""
+        data = {
+            "domain_rating": 70,
+            "organic_traffic": 50000,
+            "backlinks_count": 15000,
+            "referring_domains": 700,
+        }
+        return APIResponse(
+            success=True,
+            data=data,
+            response_time_ms=20,
+            timestamp=utc_now(),
+            source=self.__class__.__name__,
+        )

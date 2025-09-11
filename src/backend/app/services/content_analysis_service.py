@@ -4,6 +4,7 @@ Handles HTML scraping, keyword verification, and content relevance analysis
 """
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 import logging
 import re
 import asyncio
@@ -117,7 +118,7 @@ class ContentAnalysisService:
                 "keyword_matches": [],
                 "campaign_mentions": [],
                 "content_score": 0.0,
-                "scraped_at": datetime.utcnow().isoformat()
+                "scraped_at": utc_now().isoformat()
             }
         }
         

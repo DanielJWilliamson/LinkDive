@@ -3,6 +3,7 @@ Campaign management service for Link Dive AI
 """
 from typing import List, Optional
 from datetime import datetime, date, timedelta
+from app.utils.datetime_utils import utc_now
 from sqlalchemy.orm import Session
 
 from ..models.campaign import (
@@ -17,6 +18,7 @@ from ..database.database import SessionLocal
 from ..database.repository import CampaignRepository, campaign_to_dict
 from .link_analysis_service import LinkAnalysisService
 from .campaign_analysis_service import campaign_analysis_service
+from app.core.database import create_tables
 
 class CampaignService:
     """Service for managing PR campaigns"""
@@ -103,7 +105,7 @@ class CampaignService:
                     setattr(campaign, field, value)
             
             # Update timestamp
-            campaign.updated_at = datetime.utcnow()
+            campaign.updated_at = utc_now()
             db.commit()
             db.refresh(campaign)
             
@@ -123,6 +125,11 @@ class CampaignService:
     
     async def analyze_campaign(self, campaign_id: int, user_email: str) -> Optional[CampaignResultsResponse]:
         """Run enhanced backlink analysis for a campaign using campaign-specific service"""
+        # Ensure tables exist (ephemeral SQLite in tests may start clean per test)
+        try:
+            create_tables()
+        except Exception:
+            pass
         db = self._get_db_session()
         try:
             repo = CampaignRepository(db)
@@ -165,13 +172,17 @@ class CampaignService:
     
     async def _basic_campaign_analysis(self, campaign_id: int, user_email: str) -> Optional[CampaignResultsResponse]:
         """Fallback basic analysis using original implementation"""
+        try:
+            create_tables()
+        except Exception:
+            pass
         db = self._get_db_session()
+        campaign_dict = None
         try:
             repo = CampaignRepository(db)
             campaign = repo.get_campaign_by_id(campaign_id, user_email)
             if not campaign:
                 return None
-            
             campaign_dict = campaign_to_dict(campaign)
             
             # Use existing link analysis service to get backlink data
@@ -222,13 +233,15 @@ class CampaignService:
         
         except Exception as e:
             print(f"Error in basic campaign analysis {campaign_id}: {str(e)}")
-            return CampaignResultsResponse(
-                campaign=CampaignResponse(**campaign_dict),
-                results=[],
-                total_results=0,
-                verified_coverage=0,
-                potential_coverage=0
-            )
+            if campaign_dict:
+                return CampaignResultsResponse(
+                    campaign=CampaignResponse(**campaign_dict),
+                    results=[],
+                    total_results=0,
+                    verified_coverage=0,
+                    potential_coverage=0
+                )
+            return None
         finally:
             db.close()
     

@@ -5,6 +5,7 @@ Add sample data to the LinkDive database for demonstration purposes
 import sys
 import os
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 
 # Add the app directory to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
@@ -38,19 +39,19 @@ def create_sample_campaigns():
                 name="E-commerce SEO Campaign",
                 target_domain="example-store.com",
                 status="active",
-                created_at=datetime.utcnow()
+                created_at=utc_now()
             ),
             Campaign(
                 name="Tech Blog Outreach",
                 target_domain="techblog-demo.com", 
                 status="active",
-                created_at=datetime.utcnow()
+                created_at=utc_now()
             ),
             Campaign(
                 name="Local Business Boost",
                 target_domain="localbiz-example.com",
                 status="paused",
-                created_at=datetime.utcnow()
+                created_at=utc_now()
             )
         ]
         
@@ -93,7 +94,7 @@ def create_sample_campaigns():
                 domain_authority=65,
                 page_authority=58,
                 status="live",
-                found_date=datetime.utcnow()
+                found_date=utc_now()
             ),
             BacklinkResult(
                 campaign_id=db_campaigns[1].id,
@@ -103,7 +104,7 @@ def create_sample_campaigns():
                 domain_authority=72,
                 page_authority=68,
                 status="live",
-                found_date=datetime.utcnow()
+                found_date=utc_now()
             )
         ]
         
@@ -119,7 +120,7 @@ def create_sample_campaigns():
                 position=12,
                 search_engine="google",
                 location="United States",
-                checked_date=datetime.utcnow()
+                checked_date=utc_now()
             ),
             SerpRanking(
                 campaign_id=db_campaigns[1].id,
@@ -128,7 +129,7 @@ def create_sample_campaigns():
                 position=8,
                 search_engine="google",
                 location="United States",
-                checked_date=datetime.utcnow()
+                checked_date=utc_now()
             )
         ]
         

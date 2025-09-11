@@ -1,11 +1,11 @@
 """
 Backlink data models for Link Dive AI.
 """
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional, List, Dict, Any
 from enum import Enum
 
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, HttpUrl, Field, ConfigDict, field_serializer
 
 
 class LinkType(str, Enum):
@@ -56,12 +56,13 @@ class Backlink(BaseModel):
     
     # Data Source
     data_source: str  # "ahrefs", "dataforseo", "custom"
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer("first_seen", "last_seen", "last_updated", when_used="json")
+    def _serialize_dt(self, v: datetime):
+        return v.isoformat()
 
 
 class ReferringDomain(BaseModel):
@@ -85,10 +86,11 @@ class ReferringDomain(BaseModel):
     spam_score: Optional[float] = Field(None, ge=0, le=100)
     trust_score: Optional[float] = Field(None, ge=0, le=100)
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer("first_seen", "last_seen", when_used="json")
+    def _serialize_dt(self, v: datetime):
+        return v.isoformat()
 
 
 class BacklinkProfile(BaseModel):
@@ -113,7 +115,7 @@ class BacklinkProfile(BaseModel):
     net_growth_30d: int = 0
     
     # Analysis Metadata
-    last_analyzed: datetime = Field(default_factory=datetime.utcnow)
+    last_analyzed: datetime = Field(default_factory=lambda: datetime.now(UTC))
     analysis_depth: str = "basic"  # basic, comprehensive, full
     data_sources: List[str] = []
     
@@ -121,10 +123,11 @@ class BacklinkProfile(BaseModel):
     backlinks: List[Backlink] = []
     referring_domains: List[ReferringDomain] = []
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer("last_analyzed", when_used="json")
+    def _serialize_dt(self, v: datetime):
+        return v.isoformat()
 
 
 class BacklinkTrend(BaseModel):
@@ -137,10 +140,11 @@ class BacklinkTrend(BaseModel):
     net_growth: int
     average_dr: Optional[float] = None
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer("date", when_used="json")
+    def _serialize_dt(self, v: datetime):
+        return v.isoformat()
 
 
 class AnchorTextDistribution(BaseModel):
@@ -153,7 +157,8 @@ class AnchorTextDistribution(BaseModel):
     first_seen: datetime
     last_seen: datetime
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer("first_seen", "last_seen", when_used="json")
+    def _serialize_dt(self, v: datetime):
+        return v.isoformat()

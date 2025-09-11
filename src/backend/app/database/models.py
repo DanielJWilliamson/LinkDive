@@ -1,7 +1,7 @@
 """
 Database models for Link Dive AI campaigns and analysis results
 """
-from sqlalchemy import Column, Integer, String, Text, DateTime, Date, Boolean, DECIMAL, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, Date, Boolean, DECIMAL, JSON, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -21,6 +21,7 @@ class Campaign(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     auto_pause_date = Column(Date, nullable=True)
+    last_backlink_fetch_at = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
     keywords = relationship("CampaignKeyword", back_populates="campaign", cascade="all, delete-orphan")
@@ -57,6 +58,11 @@ class DomainBlacklist(Base):
 class BacklinkResult(Base):
     """Backlink analysis results for campaigns"""
     __tablename__ = "backlink_results"
+    __table_args__ = (
+        UniqueConstraint('campaign_id', 'url', 'source_api', name='uq_backlink_unique'),
+        Index('ix_backlink_campaign_status', 'campaign_id', 'coverage_status'),
+        Index('ix_backlink_campaign_destination', 'campaign_id', 'link_destination'),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     campaign_id = Column(Integer, ForeignKey("campaigns.id", ondelete="CASCADE"), nullable=False)
@@ -69,6 +75,7 @@ class BacklinkResult(Base):
     domain_rating = Column(Integer, nullable=True)
     confidence_score = Column(DECIMAL(3, 2), nullable=True)  # 0.00 to 1.00
     content_analysis = Column(JSON, nullable=True)  # Store keyword matches and analysis
+    link_destination = Column(String(30), nullable=True)  # blog_page | homepage | other
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
@@ -91,6 +98,19 @@ class SerpRanking(Base):
     # Relationships
     campaign = relationship("Campaign", back_populates="serp_rankings")
 
+
+class ContentAnalysis(Base):
+    """Content analysis results tied to a backlink result (detailed coverage verification)."""
+    __tablename__ = "content_analysis"
+
+    id = Column(Integer, primary_key=True, index=True)
+    backlink_result_id = Column(Integer, ForeignKey("backlink_results.id", ondelete="CASCADE"), nullable=False)
+    keyword_hits = Column(JSON, nullable=True)
+    score = Column(DECIMAL(3, 2), nullable=True)
+    hash = Column(String(64), nullable=True, index=True)
+    raw_excerpt = Column(Text, nullable=True)
+    analyzed_at = Column(DateTime(timezone=True), server_default=func.now())
+
 class BackgroundTask(Base):
     """Background task tracking"""
     __tablename__ = "background_tasks"
@@ -108,3 +128,14 @@ class BackgroundTask(Base):
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     estimated_duration_minutes = Column(Integer, nullable=True)
+
+
+class RateLimitState(Base):
+    """Persistent token bucket state for external API rate limiting."""
+    __tablename__ = "rate_limit_state"
+
+    name = Column(String(50), primary_key=True, index=True)
+    tokens = Column(DECIMAL(10, 2), nullable=False)
+    capacity = Column(Integer, nullable=False)
+    rate_per_minute = Column(Integer, nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

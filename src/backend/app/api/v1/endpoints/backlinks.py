@@ -10,6 +10,7 @@ import structlog
 
 from config.settings import settings
 from app.services.link_analysis_service import LinkAnalysisService
+from app.utils.datetime_utils import iso_utc_now
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -50,7 +51,7 @@ class BacklinkResponse(BaseModel):
     total_backlinks: int
     total_referring_domains: int
     data_sources: List[str]
-    backlinks: List[BacklinkData]
+    backlinks: List['BacklinkData']
     metadata: Dict[str, Any]
 
 
@@ -72,25 +73,11 @@ class DomainMetrics(BaseModel):
     summary="Analyze backlinks for a target URL",
     description="Fetch and analyze backlink data from multiple sources (Ahrefs, DataForSEO)"
 )
-async def analyze_backlinks(request: BacklinkRequest) -> BacklinkResponse:
-    """
-    Analyze backlinks for a target URL using multiple data sources.
-    
-    This endpoint aggregates backlink data from:
-    - Ahrefs API
-    - DataForSEO API
-    - Custom analysis algorithms
-    """
+async def analyze_backlinks(request: 'BacklinkRequest') -> BacklinkResponse:
     logger.info("Starting backlink analysis", target=str(request.target_url))
-    
     try:
-        # Extract domain from URL for service call
         domain = str(request.target_url).split('/')[2]
-        
-        # Get comprehensive analysis from service
         profile = await link_service.get_backlink_profile(domain)
-        
-        # Convert service response to API response format
         backlinks_data = []
         for bl in profile.backlinks[:request.limit]:
             backlinks_data.append(BacklinkData(
@@ -101,14 +88,13 @@ async def analyze_backlinks(request: BacklinkRequest) -> BacklinkResponse:
                 last_seen=bl.last_seen,
                 domain_rating=bl.domain_rating,
                 url_rating=bl.url_rating,
-                ahrefs_rank=None,  # Would need additional API call
-                traffic=None,  # Would need additional API call
+                ahrefs_rank=None,
+                traffic=None,
                 link_type=bl.link_type,
-                is_content=True,  # Default assumption
+                is_content=True,
                 is_redirect=bl.is_redirect,
                 is_canonical=bl.is_canonical
             ))
-        
         response = BacklinkResponse(
             target=str(request.target_url),
             total_backlinks=profile.total_backlinks,
@@ -116,7 +102,7 @@ async def analyze_backlinks(request: BacklinkRequest) -> BacklinkResponse:
             data_sources=["ahrefs", "dataforseo"],
             backlinks=backlinks_data,
             metadata={
-                "analysis_date": datetime.utcnow().isoformat(),
+                "analysis_date": iso_utc_now(),
                 "mode": request.mode,
                 "limit": request.limit,
                 "offset": request.offset,
@@ -125,19 +111,11 @@ async def analyze_backlinks(request: BacklinkRequest) -> BacklinkResponse:
                 "average_domain_rating": profile.average_domain_rating
             }
         )
-        
-        logger.info("Backlink analysis completed", 
-                   target=str(request.target_url), 
-                   total_backlinks=response.total_backlinks)
-        
+        logger.info("Backlink analysis completed", target=str(request.target_url), total_backlinks=response.total_backlinks)
         return response
-        
     except Exception as e:
         logger.error("Backlink analysis failed", target=str(request.target_url), error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to analyze backlinks: {str(e)}"
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to analyze backlinks: {str(e)}")
 
 
 @router.get(
@@ -223,28 +201,14 @@ async def list_backlink_analyses(
     summary="Analyze competitor backlinks",
     description="Compare backlink profiles with competitors to identify opportunities"
 )
-async def analyze_competitor_backlinks(
-    target_domain: str,
-    competitor_domains: List[str],
-    analysis_depth: str = "standard"
-) -> Dict[str, Any]:
-    """Analyze competitor backlink gaps and opportunities."""
-    logger.info("Starting competitor analysis", 
-                target=target_domain, 
-                competitors=competitor_domains)
-    
+async def analyze_competitor_backlinks(target_domain: str, competitor_domains: List[str], analysis_depth: str = "standard") -> Dict[str, Any]:
+    logger.info("Starting competitor analysis", target=target_domain, competitors=competitor_domains)
     try:
-        # Get link opportunities from service
-        opportunities = await link_service.analyze_competitor_gaps(
-            target_domain,
-            competitor_domains
-        )
-        
-        # Format response
+        opportunities = await link_service.analyze_competitor_gaps(target_domain, competitor_domains)
         competitor_analysis = {
             "target_domain": target_domain,
             "competitors": competitor_domains,
-            "analysis_timestamp": datetime.utcnow().isoformat(),
+            "analysis_timestamp": iso_utc_now(),
             "analysis_depth": analysis_depth,
             "total_opportunities": len(opportunities),
             "opportunities": [
@@ -265,21 +229,11 @@ async def analyze_competitor_backlinks(
                 "low_priority_opportunities": len([o for o in opportunities if o.priority_score < 5])
             }
         }
-        
-        logger.info("Competitor analysis completed", 
-                   target=target_domain,
-                   opportunities_found=len(opportunities))
-        
+        logger.info("Competitor analysis completed", target=target_domain, opportunities_found=len(opportunities))
         return competitor_analysis
-        
     except Exception as e:
-        logger.error("Competitor analysis failed", 
-                    target=target_domain, 
-                    error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Competitor analysis failed: {str(e)}"
-        )
+        logger.error("Competitor analysis failed", target=target_domain, error=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Competitor analysis failed: {str(e)}")
 
 
 @router.get(
@@ -287,24 +241,15 @@ async def analyze_competitor_backlinks(
     summary="Get link risk assessment",
     description="Identify potentially toxic or harmful backlinks"
 )
-async def get_link_risks(
-    domain: str,
-    severity: str = Query("all", regex="^(all|high|medium|low)$")
-) -> Dict[str, Any]:
-    """Get risk assessment for domain backlinks."""
+async def get_link_risks(domain: str, severity: str = Query("all", pattern="^(all|high|medium|low)$")) -> Dict[str, Any]:
     logger.info("Starting risk assessment", domain=domain, severity=severity)
-    
     try:
-        # Get risk assessment from service
         risks = await link_service.assess_link_risks(domain)
-        
-        # Filter by severity if specified
         if severity != "all":
             risks = [r for r in risks if r.severity == severity]
-        
         risk_assessment = {
             "domain": domain,
-            "scan_date": datetime.utcnow().isoformat(),
+            "scan_date": iso_utc_now(),
             "total_risks": len(risks),
             "severity_breakdown": {
                 "high": len([r for r in risks if r.severity == "high"]),
@@ -320,19 +265,11 @@ async def get_link_risks(
                     "recommendation": risk.recommendation,
                     "detected_date": risk.detected_date.isoformat()
                 }
-                for risk in risks[:100]  # Limit to 100 for response size
+                for risk in risks[:100]
             ]
         }
-        
-        logger.info("Risk assessment completed", 
-                   domain=domain,
-                   risks_found=len(risks))
-        
+        logger.info("Risk assessment completed", domain=domain, risks_found=len(risks))
         return risk_assessment
-        
     except Exception as e:
         logger.error("Risk assessment failed", domain=domain, error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Risk assessment failed: {str(e)}"
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Risk assessment failed: {str(e)}")

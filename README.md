@@ -183,6 +183,13 @@ Once the server is running, explore the interactive documentation:
 
 *Main campaign management dashboard showing empty state with options to create new campaigns. User is authenticated as "Admin User (Development)".*
 
+### Example – Campaigns Listed
+The dashboard now shows seeded/example campaigns out of the box when running in mock mode. Here is an example of campaigns listed in the UI:
+
+![Example Campaigns Listed](docs/images/campaign-dashboard.png)
+
+Note: When Live mode is enabled and provider credentials don’t have the required scope/subscription, the UI will surface a short explainer in the Data Source Mode card and automatically fall back to Mock.
+
 ### Frontend - Campaign Creation Process
 
 #### Step 1: Basic Information
@@ -232,6 +239,38 @@ This dual authentication system allows:
 - ✅ **Secure production access** via Google OAuth with domain restrictions
 - ✅ **Easy development testing** without needing domain-specific email accounts
 - ✅ **Quick demo access** for showcasing the platform
+
+### Transitional API Authentication (Backend)
+
+The backend currently supports a lightweight header-based override while full OAuth wiring is completed:
+
+- Provide `X-User-Email: user@example.com` on any API request to impersonate that user.
+- If the header is omitted, a fallback `demo@linkdive.ai` user is assumed (development & tests) unless strict mode is enabled.
+- To require the header (e.g. staging/production hardening), set environment variable:
+
+```bash
+ENFORCE_AUTH_HEADERS=1
+```
+
+When enabled, requests without `X-User-Email` receive `401 Missing authentication header`.
+
+### Structured Logging with User Context
+
+Each request log line now includes the resolved user (header or fallback) plus a correlation ID:
+
+Example (JSON pretty printed):
+```json
+{
+  "event": "request.end",
+  "request_id": "c3f6a9b0-9d3c-4e2a-8c07-6e97e0e7d5b1",
+  "method": "GET",
+  "path": "/api/campaigns",
+  "user": "demo@linkdive.ai",
+  "status_code": 200,
+  "duration_ms": 12.41
+}
+```
+Use `request_id` for tracing multi-step workflows in logs; supply your own via `X-Request-ID` to propagate across services.
 
 ## 🧪 Testing the API
 
@@ -320,3 +359,55 @@ REDIS_URL=redis://localhost:6379/0
 For questions, support, or to request a demo, contact:---
 
 *Built with ❤️ as a comprehensive SEO analysis platform. This demonstrates a production-ready FastAPI backend with comprehensive SEO analysis capabilities.*
+
+## ▶️ Run Locally (Windows, PowerShell)
+
+Backend (FastAPI):
+
+1) Create and activate a virtual environment
+
+```powershell
+cd c:\source\TestInts\Kaizen\KaizenTest\src\backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+2) Start the API server
+
+```powershell
+python start_server.py
+# or
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+3) Verify health
+
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/v1/health" -Method GET
+```
+
+Frontend (Next.js 15):
+
+```powershell
+cd c:\source\TestInts\Kaizen\KaizenTest\src\frontend
+npm install --no-audit --no-fund
+$env:NEXT_PUBLIC_API_URL = "http://127.0.0.1:8000"  # optional; default is 127.0.0.1:8000
+npm run dev
+```
+
+Open http://localhost:3000 in your browser.
+
+Notes:
+- Development auth: the frontend and Axios client send `X-User-Email` automatically (demo identity) for backend routes.
+- Mock/Live toggle: On the dashboard, use the “Data Source Mode” card to switch between Mock and Live. If provider credentials are missing scope/subscription, the UI shows an explainer and the system safely falls back to Mock.
+- Seeded/example data: A few example campaigns are visible in Mock mode to help you explore the UI quickly.
+
+## 🔐 Pre-public Repo Security Checklist
+
+- Ensure no real secrets are tracked:
+  - `.env`, `*.env`, and `TaskOverview/` are ignored by `.gitignore`.
+  - Redact/remove any secrets in documentation/spec files before commit.
+- Verify no hardcoded tokens/passwords exist in source files (scan passed in this repo; examples remain placeholders only).
+- Confirm CORS is restricted to local dev by default (production origins must be set via env).
+- Keep provider credentials only in local `.env` files; do not commit them.

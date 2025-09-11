@@ -1,11 +1,11 @@
 """
 Analysis and insights models for Link Dive AI.
 """
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional, List, Dict, Any, Union
 from enum import Enum
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, ConfigDict, field_serializer
 
 
 class AnalysisType(str, Enum):
@@ -48,13 +48,14 @@ class QualityScore(BaseModel):
     score_explanation: str = ""
     
     # Metadata
-    calculated_at: datetime = Field(default_factory=datetime.utcnow)
+    calculated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     confidence_level: float = Field(..., ge=0, le=100)
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer("calculated_at", when_used="json")
+    def _serialize_dt(self, v: datetime):
+        return v.isoformat()
 
 
 class CompetitorInsight(BaseModel):
@@ -79,12 +80,13 @@ class CompetitorInsight(BaseModel):
     competitive_advantages: List[str] = []
     
     # Analysis
-    analyzed_at: datetime = Field(default_factory=datetime.utcnow)
+    analyzed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer("analyzed_at", when_used="json")
+    def _serialize_dt(self, v: datetime):
+        return v.isoformat()
 
 
 class LinkOpportunity(BaseModel):
@@ -114,13 +116,14 @@ class LinkOpportunity(BaseModel):
     supporting_evidence: List[str] = []
     
     # Metadata
-    discovered_at: datetime = Field(default_factory=datetime.utcnow)
+    discovered_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     priority: str = "medium"  # low, medium, high
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer("discovered_at", when_used="json")
+    def _serialize_dt(self, v: datetime):
+        return v.isoformat()
 
 
 class RiskAlert(BaseModel):
@@ -141,16 +144,17 @@ class RiskAlert(BaseModel):
     priority: int = Field(..., ge=1, le=10)
     
     # Timeline
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     estimated_fix_time: Optional[str] = None
     
     # Evidence
     supporting_data: Dict[str, Any] = {}
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer("detected_at", when_used="json")
+    def _serialize_dt(self, v: datetime):
+        return v.isoformat()
 
 
 class GrowthMetric(BaseModel):
@@ -172,12 +176,13 @@ class GrowthMetric(BaseModel):
     industry_average: Optional[Union[int, float]] = None
     
     # Metadata
-    measured_at: datetime = Field(default_factory=datetime.utcnow)
+    measured_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer("measured_at", when_used="json")
+    def _serialize_dt(self, v: datetime):
+        return v.isoformat()
 
 
 class Recommendation(BaseModel):
@@ -201,13 +206,14 @@ class Recommendation(BaseModel):
     supporting_evidence: List[str] = []
     
     # Metadata
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     confidence_score: float = Field(..., ge=0, le=100)
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer("generated_at", when_used="json")
+    def _serialize_dt(self, v: datetime):
+        return v.isoformat()
 
 
 class ComprehensiveAnalysis(BaseModel):
@@ -225,7 +231,7 @@ class ComprehensiveAnalysis(BaseModel):
     
     # Analysis Metadata
     analysis_types: List[AnalysisType] = []
-    analysis_date: datetime = Field(default_factory=datetime.utcnow)
+    analysis_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     processing_time_ms: Optional[int] = None
     data_sources: List[str] = []
     
@@ -238,7 +244,8 @@ class ComprehensiveAnalysis(BaseModel):
     analysis_depth: str = "comprehensive"  # basic, comprehensive, deep
     confidence_level: float = Field(..., ge=0, le=100)
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+
+    @field_serializer("analysis_date", when_used="json")
+    def _serialize_dt(self, v: datetime):
+        return v.isoformat()

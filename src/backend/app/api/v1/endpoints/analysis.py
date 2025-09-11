@@ -3,6 +3,7 @@ Analysis endpoints for Link Dive AI SEO insights.
 """
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from enum import Enum
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -173,7 +174,7 @@ async def comprehensive_analysis(request: AnalysisRequest) -> AnalysisResponse:
         
         response = AnalysisResponse(
             target=str(request.target_url),
-            analysis_date=datetime.utcnow(),
+            analysis_date=utc_now(),
             quality_score=quality_score,
             competitor_analysis=competitor_analysis,
             opportunities=opportunities,
@@ -229,7 +230,7 @@ async def quick_quality_assessment(domain: str) -> Dict[str, Any]:
                 "Focus on acquiring links from international sources",
                 "Audit and potentially disavow low-quality links"
             ],
-            "last_updated": datetime.utcnow().isoformat()
+            "last_updated": utc_now().isoformat()
         }
         
         return assessment
@@ -286,7 +287,7 @@ async def find_opportunities(
                 "min_domain_rating": min_dr,
                 "limit": limit
             },
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": utc_now().isoformat()
         }
         
     except Exception as e:

@@ -16,6 +16,11 @@ export interface BacklinkData {
   is_content: boolean;
   is_redirect: boolean;
   is_canonical: boolean;
+  // Newly enriched analytics fields (optional while backend rolls out)
+  coverage_status?: string; // e.g., 'verified', 'pending'
+  link_destination?: string; // classified destination type (homepage, blog, docs, etc.)
+  confidence_score?: number; // generic confidence metric from analysis (0-100)
+  content_relevance_score?: number; // semantic relevance 0-100
 }
 
 export interface DomainMetrics {
@@ -43,6 +48,36 @@ export interface BacklinkResponse {
     dofollow_percentage?: number;
     domain_authority_avg?: number;
   };
+}
+
+// Coverage summary types
+export interface CoverageDestinationBreakdown {
+  destination: string;
+  count: number;
+  percentage: number;
+}
+
+export interface CampaignCoverageSummary {
+  campaign_id: number;
+  campaign_name: string;
+  client_domain: string;
+  total_backlinks: number;
+  verified_coverage: number;
+  potential_coverage: number;
+  verification_rate: number;
+  avg_domain_rating?: number;
+  last_updated?: string;
+  destination_breakdown: CoverageDestinationBreakdown[];
+}
+
+export interface AggregateCoverageSummary {
+  total_campaigns: number;
+  total_backlinks: number;
+  total_verified: number;
+  total_potential: number;
+  overall_verification_rate: number;
+  average_dr?: number;
+  campaigns: CampaignCoverageSummary[];
 }
 
 export interface HealthStatus {

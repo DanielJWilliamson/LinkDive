@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { apiClient } from '../lib/api';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
+// API base path (apiClient baseURL points at host root)
+const API_PREFIX = '/api/v1';
 
 // Types
 interface Campaign {
@@ -51,36 +52,36 @@ interface CampaignResults {
 // API functions
 const campaignApi = {
   getCampaigns: async (): Promise<Campaign[]> => {
-    const response = await axios.get(`${API_BASE_URL}/campaigns`);
+  const response = await apiClient.get(`${API_PREFIX}/campaigns`);
     return response.data;
   },
 
   getCampaign: async (id: number): Promise<Campaign> => {
-    const response = await axios.get(`${API_BASE_URL}/campaigns/${id}`);
+  const response = await apiClient.get(`${API_PREFIX}/campaigns/${id}`);
     return response.data;
   },
 
   createCampaign: async (data: CampaignFormData): Promise<Campaign> => {
-    const response = await axios.post(`${API_BASE_URL}/campaigns`, data);
+  const response = await apiClient.post(`${API_PREFIX}/campaigns`, data);
     return response.data;
   },
 
   updateCampaign: async (id: number, data: Partial<CampaignFormData>): Promise<Campaign> => {
-    const response = await axios.put(`${API_BASE_URL}/campaigns/${id}`, data);
+  const response = await apiClient.put(`${API_PREFIX}/campaigns/${id}`, data);
     return response.data;
   },
 
   deleteCampaign: async (id: number): Promise<void> => {
-    await axios.delete(`${API_BASE_URL}/campaigns/${id}`);
+  await apiClient.delete(`${API_PREFIX}/campaigns/${id}`);
   },
 
   analyzeCampaign: async (id: number): Promise<CampaignResults> => {
-    const response = await axios.post(`${API_BASE_URL}/campaigns/${id}/analyze`);
+  const response = await apiClient.post(`${API_PREFIX}/campaigns/${id}/analyze`);
     return response.data;
   },
 
   getCampaignResults: async (id: number): Promise<CampaignResults> => {
-    const response = await axios.get(`${API_BASE_URL}/campaigns/${id}/results`);
+  const response = await apiClient.get(`${API_PREFIX}/campaigns/${id}/results`);
     return response.data;
   }
 };

@@ -9,10 +9,14 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+import os
 
 from app.api.v1.api import api_router
 from app.api.background import router as background_router
 from app.core.config import get_cors_config, get_api_metadata
+from app.middleware.logging_middleware import register_request_logging
+from app.core.logging_config import configure_logging
+from app.middleware.auth_middleware import HeaderAuthMiddleware
 from app.services.background_processing_service import background_processing_service
 from app.utils.port_manager import clear_port, is_port_available
 from config.settings import settings
@@ -25,6 +29,7 @@ logger = structlog.get_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan events."""
     # Startup
+    configure_logging(settings.log_level, json=(settings.log_format == "json"))
     logger.info("Starting Link Dive AI application", version=settings.app_version)
     
     # Clear the port before starting
@@ -72,8 +77,9 @@ def create_application() -> FastAPI:
         **metadata
     )
     
-    # Add middleware
+    # Add middleware (CORS, hosts, logging)
     setup_middleware(app)
+    register_request_logging(app)
     
     # Include routers
     app.include_router(api_router, prefix="/api/v1")
@@ -97,6 +103,12 @@ def create_application() -> FastAPI:
             "docs_url": "/docs",
             "api_prefix": "/api/v1"
         }
+
+    # Minimal favicon handler so browsers don't trigger auth middleware errors on /favicon.ico
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon():  # pragma: no cover - trivial
+        from fastapi import Response
+        return Response(status_code=204)
     
     return app
 
@@ -109,11 +121,20 @@ def setup_middleware(app: FastAPI) -> None:
     app.add_middleware(CORSMiddleware, **cors_config)
     
     # Trusted host middleware
+    # Always include test client hostnames when under pytest
     if not settings.debug:
         app.add_middleware(
             TrustedHostMiddleware,
-            allowed_hosts=["linkdive.ai", "*.linkdive.ai", "localhost", "127.0.0.1"]
+            allowed_hosts=[
+                "linkdive.ai",
+                "*.linkdive.ai",
+                "localhost",
+                "127.0.0.1",
+                "testserver",  # allow test client host
+            ]
         )
+    # Auth header middleware (after CORS, before routers)
+    app.add_middleware(HeaderAuthMiddleware)
 
 
 # Create the application instance

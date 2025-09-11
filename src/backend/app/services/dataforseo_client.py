@@ -4,6 +4,7 @@ DataForSEO API client for comprehensive SEO data.
 import base64
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+from app.utils.datetime_utils import utc_now
 
 from .base_api import BaseAPIClient, APIResponse
 from config.settings import settings
@@ -244,7 +245,7 @@ class DataForSEOClient(BaseAPIClient):
                 data=None,
                 error=str(e),
                 response_time_ms=0,
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
                 source=self.__class__.__name__
             )
     

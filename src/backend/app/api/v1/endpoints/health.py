@@ -1,7 +1,8 @@
 """
 Health check endpoints for monitoring and system status.
 """
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from time import perf_counter
 from typing import Dict, Any
 
 from fastapi import APIRouter, status
@@ -13,7 +14,10 @@ router = APIRouter()
 
 
 class HealthResponse(BaseModel):
-    """Health check response model."""
+    """Basic health check response model.
+
+    Kept intentionally lightweight for liveness endpoints / external load balancer checks.
+    """
     status: str
     timestamp: datetime
     version: str
@@ -22,7 +26,7 @@ class HealthResponse(BaseModel):
 
 
 class DetailedHealthResponse(BaseModel):
-    """Detailed health check response model."""
+    """Detailed health check response model including metrics snapshot."""
     status: str
     timestamp: datetime
     version: str
@@ -30,6 +34,36 @@ class DetailedHealthResponse(BaseModel):
     uptime: str
     services: Dict[str, Dict[str, Any]]
     system_info: Dict[str, Any]
+    metrics: Dict[str, Any]
+
+
+# Track application start time for uptime calculation (module import time)
+START_TIME = datetime.now(timezone.utc)
+
+def _format_uptime(delta: timedelta) -> str:
+    days = delta.days
+    hours, rem = divmod(delta.seconds, 3600)
+    minutes, _ = divmod(rem, 60)
+    return f"{days}d {hours}h {minutes}m"
+
+def _db_connectivity_check() -> Dict[str, Any]:
+    """Perform a lightweight database connectivity check (SELECT 1)."""
+    from sqlalchemy import text
+    from app.core.database import engine
+    start = perf_counter()
+    status_val = "healthy"
+    error_msg = None
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as e:  # pragma: no cover - edge failure path
+        status_val = "unhealthy"
+        error_msg = str(e)
+    latency_ms = round((perf_counter() - start) * 1000, 2)
+    payload: Dict[str, Any] = {"status": status_val, "latency_ms": latency_ms}
+    if error_msg:
+        payload["error"] = error_msg
+    return payload
 
 
 @router.get(
@@ -43,12 +77,12 @@ async def health_check() -> HealthResponse:
     """Basic health check endpoint."""
     return HealthResponse(
         status="healthy",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         version=settings.app_version,
         environment="development" if settings.debug else "production",
         services={
             "api": "healthy",
-            "database": "healthy",  # TODO: Add actual database check
+            "database": _db_connectivity_check().get("status", "unknown"),
             "redis": "healthy",     # TODO: Add actual Redis check
         }
     )
@@ -65,6 +99,7 @@ async def detailed_health_check() -> DetailedHealthResponse:
     """Detailed health check endpoint with system information."""
     import psutil
     import platform
+    from app.core.metrics import metrics
     
     # Get system information
     system_info = {
@@ -75,36 +110,33 @@ async def detailed_health_check() -> DetailedHealthResponse:
         "disk_percent": psutil.disk_usage('/').percent,
     }
     
-    # TODO: Add actual service health checks
+    db_status = _db_connectivity_check()
+    # TODO: Replace redis stub with actual client ping once integrated
     services = {
-        "api": {
-            "status": "healthy",
-            "response_time_ms": 5,
-        },
-        "database": {
-            "status": "healthy",
-            "connection_pool": "active",
-            "response_time_ms": 10,
-        },
-        "redis": {
-            "status": "healthy",
-            "connection_count": 1,
-            "response_time_ms": 2,
-        },
+        "api": {"status": "healthy"},
+        "database": db_status,
+        "redis": {"status": "healthy", "note": "stub"},
         "external_apis": {
-            "ahrefs": "healthy",
-            "dataforseo": "healthy",
+            "ahrefs": "stub",  # future enhancement
+            "dataforseo": "stub"
         }
     }
+
+    metric_snapshot = metrics.snapshot()
     
     return DetailedHealthResponse(
         status="healthy",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         version=settings.app_version,
         environment="development" if settings.debug else "production",
-        uptime="0 days, 0 hours, 0 minutes",  # TODO: Calculate actual uptime
+    uptime=_format_uptime(datetime.now(timezone.utc) - START_TIME),
         services=services,
-        system_info=system_info
+        system_info=system_info,
+        metrics={
+            "counters": metric_snapshot.get("counters", {}),
+            "gauges": metric_snapshot.get("gauges", {}),
+            "timestamps": metric_snapshot.get("timestamps", {})
+        }
     )
 
 

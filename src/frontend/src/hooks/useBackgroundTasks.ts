@@ -26,11 +26,23 @@ interface CreateTaskResponse {
 }
 
 const API_BASE = 'http://localhost:8000/api';
+const DEV_USER_EMAIL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_DEV_USER_EMAIL) || 'demo@linkdive.ai';
+const withAuthHeaders = (init: RequestInit = {}): RequestInit => {
+  return {
+    ...init,
+    headers: {
+      'X-User-Email': DEV_USER_EMAIL,
+      'Content-Type': 'application/json',
+      ...(init.headers || {}),
+    },
+  };
+};
 
 // Fetch task status
 const fetchTaskStatus = async (taskId: string, userEmail: string): Promise<BackgroundTask> => {
   const response = await fetch(
-    `${API_BASE}/background/tasks/${taskId}?user_email=${encodeURIComponent(userEmail)}`
+    `${API_BASE}/background/tasks/${taskId}?user_email=${encodeURIComponent(userEmail)}`,
+    withAuthHeaders()
   );
   
   if (!response.ok) {
@@ -43,7 +55,8 @@ const fetchTaskStatus = async (taskId: string, userEmail: string): Promise<Backg
 // Fetch task result
 const fetchTaskResult = async (taskId: string, userEmail: string) => {
   const response = await fetch(
-    `${API_BASE}/background/tasks/${taskId}/result?user_email=${encodeURIComponent(userEmail)}`
+    `${API_BASE}/background/tasks/${taskId}/result?user_email=${encodeURIComponent(userEmail)}`,
+    withAuthHeaders()
   );
   
   if (!response.ok) {
@@ -58,7 +71,7 @@ const fetchUserTasks = async (userEmail: string, status?: string): Promise<Backg
   const params = new URLSearchParams({ user_email: userEmail });
   if (status) params.append('status', status);
   
-  const response = await fetch(`${API_BASE}/background/tasks?${params}`);
+  const response = await fetch(`${API_BASE}/background/tasks?${params}`, withAuthHeaders());
   
   if (!response.ok) {
     throw new Error(`Failed to fetch tasks: ${response.statusText}`);
@@ -74,13 +87,10 @@ const createBackgroundTask = async (
 ): Promise<CreateTaskResponse> => {
   const response = await fetch(
     `${API_BASE}/background/tasks?user_email=${encodeURIComponent(userEmail)}`,
-    {
+    withAuthHeaders({
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(taskRequest),
-    }
+    })
   );
   
   if (!response.ok) {
@@ -105,7 +115,7 @@ const startCampaignAnalysis = async (
   
   const response = await fetch(
     `${API_BASE}/background/campaigns/${campaignId}/analyze?${params}`,
-    { method: 'POST' }
+    withAuthHeaders({ method: 'POST' })
   );
   
   if (!response.ok) {
@@ -119,7 +129,7 @@ const startCampaignAnalysis = async (
 const cancelTask = async (taskId: string, userEmail: string): Promise<void> => {
   const response = await fetch(
     `${API_BASE}/background/tasks/${taskId}?user_email=${encodeURIComponent(userEmail)}`,
-    { method: 'DELETE' }
+    withAuthHeaders({ method: 'DELETE' })
   );
   
   if (!response.ok) {

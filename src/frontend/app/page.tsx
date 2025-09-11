@@ -2,11 +2,14 @@
 
 import { useState } from 'react';
 import { CampaignList } from '../components/CampaignList';
+import { CoverageSummary } from '../components/CoverageSummary';
+import Link from 'next/link';
 import { CreateCampaignModal } from '../components/CreateCampaignModal';
 import { BacklinkCharts } from '../components/BacklinkCharts';
 import BackgroundTaskMonitor from '../src/components/BackgroundTaskMonitor';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { UserProfile } from '../components/auth/UserProfile';
+import { MockModeToggle } from '../components/MockModeToggle';
 import { 
   useCampaigns, 
   useCreateCampaign, 
@@ -105,12 +108,24 @@ export default function Dashboard() {
   return (
     <ProtectedRoute>
       {viewMode === 'campaigns' ? (
-        <CampaignList
-          campaigns={campaigns}
-          onCampaignSelect={handleCampaignSelect}
-          onNewCampaign={() => setShowCreateModal(true)}
-          isLoading={campaignsLoading}
-        />
+        <div className="space-y-8">
+          <CampaignList
+            campaigns={campaigns}
+            onCampaignSelect={handleCampaignSelect}
+            onNewCampaign={() => setShowCreateModal(true)}
+            isLoading={campaignsLoading}
+          />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Coverage Overview</h2>
+              <Link href="/coverage" className="text-sm text-blue-600 hover:underline">Open Full Coverage Dashboard →</Link>
+            </div>
+            <div className="mb-4">
+              <MockModeToggle />
+            </div>
+            <CoverageSummary />
+          </div>
+        </div>
       ) : (
         <div className="min-h-screen bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

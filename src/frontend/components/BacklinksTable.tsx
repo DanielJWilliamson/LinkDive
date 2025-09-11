@@ -12,7 +12,7 @@ interface BacklinksTableProps {
   isLoading?: boolean;
 }
 
-type SortField = 'domain_rating' | 'url_rating' | 'anchor' | 'url_from';
+type SortField = 'domain_rating' | 'url_rating' | 'anchor' | 'url_from' | 'confidence';
 type SortDirection = 'asc' | 'desc';
 
 export function BacklinksTable({ backlinks, isLoading = false }: BacklinksTableProps) {
@@ -74,6 +74,10 @@ export function BacklinksTable({ backlinks, isLoading = false }: BacklinksTableP
         case 'url_from':
           aValue = a.url_from.toLowerCase();
           bValue = b.url_from.toLowerCase();
+          break;
+        case 'confidence':
+          aValue = a.confidence_score ?? a.content_relevance_score ?? 0;
+          bValue = b.confidence_score ?? b.content_relevance_score ?? 0;
           break;
         default:
           aValue = 0;
@@ -174,6 +178,8 @@ export function BacklinksTable({ backlinks, isLoading = false }: BacklinksTableP
                     {getSortIcon('url_from')}
                   </button>
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coverage</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button
                     onClick={() => handleSort('anchor')}
@@ -205,6 +211,12 @@ export function BacklinksTable({ backlinks, isLoading = false }: BacklinksTableP
                   Link Type
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button onClick={() => handleSort('confidence')} className="flex items-center space-x-1 hover:text-gray-900">
+                    <span>Confidence</span>
+                    {getSortIcon('confidence')}
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -223,6 +235,14 @@ export function BacklinksTable({ backlinks, isLoading = false }: BacklinksTableP
                         </div>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs rounded-full ${ backlink.coverage_status === 'verified' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }`}>
+                      {backlink.coverage_status || '—'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    {backlink.link_destination || '—'}
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900 max-w-xs truncate">
@@ -253,6 +273,9 @@ export function BacklinksTable({ backlinks, isLoading = false }: BacklinksTableP
                         </span>
                       )}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {backlink.confidence_score ?? backlink.content_relevance_score ?? '—'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex space-x-2">

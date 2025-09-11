@@ -4,63 +4,58 @@ Configuration settings for LinkDive application.
 import os
 from typing import List, Optional, Union
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import ConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # Application
-    app_name: str = Field(default="LinkDive", env="APP_NAME")
-    app_version: str = Field(default="1.0.0", env="APP_VERSION")
-    debug: bool = Field(default=False, env="DEBUG")
-    log_level: str = Field(default="INFO", env="LOG_LEVEL")
+    app_name: str = "LinkDive"
+    app_version: str = "1.0.0"
+    debug: bool = False
+    log_level: str = "INFO"
     
     # Server
-    host: str = Field(default="0.0.0.0", env="HOST")
-    port: int = Field(default=8000, env="PORT")
-    workers: int = Field(default=1, env="WORKERS")
+    host: str = "0.0.0.0"
+    port: int = 8000
+    workers: int = 1
     
     # Database
-    database_url: str = Field(default="postgresql://linkdive:password@localhost:5432/linkdive_db", env="DATABASE_URL")
-    database_host: str = Field(default="localhost", env="DATABASE_HOST")
-    database_port: int = Field(default=5432, env="DATABASE_PORT")
-    database_user: str = Field(default="linkdive", env="DATABASE_USER")
-    database_password: str = Field(default="password", env="DATABASE_PASSWORD")
-    database_name: str = Field(default="linkdive_db", env="DATABASE_NAME")
+    database_url: str = "postgresql://linkdive:password@localhost:5432/linkdive_db"
+    database_host: str = "localhost"
+    database_port: int = 5432
+    database_user: str = "linkdive"
+    database_password: str = "password"
+    database_name: str = "linkdive_db"
     
     # Redis
-    redis_url: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
-    redis_host: str = Field(default="localhost", env="REDIS_HOST")
-    redis_port: int = Field(default=6379, env="REDIS_PORT")
-    redis_db: int = Field(default=0, env="REDIS_DB")
-    redis_password: Optional[str] = Field(default=None, env="REDIS_PASSWORD")
+    redis_url: str = "redis://localhost:6379/0"
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_password: Optional[str] = None
     
     # External APIs
-    ahrefs_api_key: Optional[str] = Field(default=None, env="AHREFS_API_KEY")
-    AHREFS_API_KEY: Optional[str] = Field(default=None, env="AHREFS_API_KEY")  # Alias for service compatibility
-    dataforseo_username: Optional[str] = Field(default=None, env="DATAFORSEO_USERNAME")
-    DATAFORSEO_USERNAME: Optional[str] = Field(default=None, env="DATAFORSEO_USERNAME")  # Alias
-    dataforseo_password: Optional[str] = Field(default=None, env="DATAFORSEO_PASSWORD")
-    DATAFORSEO_PASSWORD: Optional[str] = Field(default=None, env="DATAFORSEO_PASSWORD")  # Alias
-    ahrefs_base_url: str = Field(default="https://api.ahrefs.com/v3", env="AHREFS_BASE_URL")
-    dataforseo_base_url: str = Field(default="https://api.dataforseo.com/v3", env="DATAFORSEO_BASE_URL")
+    ahrefs_api_key: Optional[str] = None
+    AHREFS_API_KEY: Optional[str] = None  # Alias for service compatibility
+    dataforseo_username: Optional[str] = None
+    DATAFORSEO_USERNAME: Optional[str] = None  # Alias
+    dataforseo_password: Optional[str] = None
+    DATAFORSEO_PASSWORD: Optional[str] = None  # Alias
+    ahrefs_base_url: str = "https://api.ahrefs.com/v3"
+    dataforseo_base_url: str = "https://api.dataforseo.com/v3"
     
     # Security
-    secret_key: str = Field(default="dev-secret-key-change-in-production", env="SECRET_KEY")
-    access_token_expire_minutes: int = Field(default=30, env="ACCESS_TOKEN_EXPIRE_MINUTES")
-    algorithm: str = Field(default="HS256", env="ALGORITHM")
+    secret_key: str = "dev-secret-key-change-in-production"
+    access_token_expire_minutes: int = 30
+    algorithm: str = "HS256"
     
     # CORS
-    allowed_origins: List[str] = Field(
-        default=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3002", "http://127.0.0.1:3002"],
-        env="ALLOWED_ORIGINS"
-    )
-    allowed_methods: List[str] = Field(
-        default=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        env="ALLOWED_METHODS"
-    )
-    allowed_headers: List[str] = Field(default=["*"], env="ALLOWED_HEADERS")
+    allowed_origins: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3002", "http://127.0.0.1:3002"]
+    allowed_methods: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed_headers: List[str] = ["*"]
     
     @field_validator('allowed_origins', 'allowed_methods', 'allowed_headers', mode='before')
     @classmethod
@@ -71,33 +66,53 @@ class Settings(BaseSettings):
         return v
     
     # Rate Limiting
-    rate_limit_requests_per_minute: int = Field(default=60, env="RATE_LIMIT_REQUESTS_PER_MINUTE")
-    rate_limit_burst: int = Field(default=10, env="RATE_LIMIT_BURST")
+    rate_limit_requests_per_minute: int = 60
+    rate_limit_burst: int = 10
     
     # Caching
-    cache_ttl_seconds: int = Field(default=3600, env="CACHE_TTL_SECONDS")
-    backlink_cache_ttl: int = Field(default=86400, env="BACKLINK_CACHE_TTL")
-    analysis_cache_ttl: int = Field(default=7200, env="ANALYSIS_CACHE_TTL")
+    cache_ttl_seconds: int = 3600
+    backlink_cache_ttl: int = 86400
+    analysis_cache_ttl: int = 7200
     
     # Celery
-    celery_broker_url: str = Field(default="redis://localhost:6379/1", env="CELERY_BROKER_URL")
-    celery_result_backend: str = Field(default="redis://localhost:6379/2", env="CELERY_RESULT_BACKEND")
+    celery_broker_url: str = "redis://localhost:6379/1"
+    celery_result_backend: str = "redis://localhost:6379/2"
     
     # Feature Flags
-    enable_caching: bool = Field(default=True, env="ENABLE_CACHING")
-    enable_rate_limiting: bool = Field(default=True, env="ENABLE_RATE_LIMITING")
-    enable_background_tasks: bool = Field(default=True, env="ENABLE_BACKGROUND_TASKS")
+    enable_caching: bool = True
+    enable_rate_limiting: bool = True
+    enable_background_tasks: bool = True
+    enable_serp_monitoring: bool = True
+    enable_content_scrape: bool = False
+    enable_persistent_rate_limits: bool = False  # Feature flag for DB-backed limiter
+    # Mock/live data mode (runtime-overridable via /api/v1/runtime/config)
+    enable_mock_mode: bool = True
+
+    # Monitoring Window / Scheduling
+    monitor_window_tz: str = "Europe/London"
+    monitor_start_hour: int = 7
+    monitor_end_hour: int = 19
+
+    # SERP / Coverage Parameters
+    serp_top_n: int = 20
+    max_hourly_ahrefs_calls: int = 500
+    max_hourly_dataforseo_calls: int = 500
+
+    # Cost Guard
+    cost_budget_daily_usd: float = 25.0
+    allowed_email_domain: str = "linkdive.ai"
     
     # Monitoring
-    sentry_dsn: Optional[str] = Field(default=None, env="SENTRY_DSN")
-    log_format: str = Field(default="json", env="LOG_FORMAT")
-    log_file: str = Field(default="logs/app.log", env="LOG_FILE")
+    sentry_dsn: Optional[str] = None
+    log_format: str = "json"
+    log_file: str = "logs/app.log"
 
-    class Config:
-        # Temporarily disable .env file loading to fix parsing issues
-        # env_file = ".env"
-        # env_file_encoding = "utf-8"
-        case_sensitive = False
+    # Pydantic v2 configuration
+    # Enable reading from a local .env file so credentials can be supplied without mutating the shell env
+    # Keep case-insensitive env var names for convenience (ahrefs_api_key vs AHREFS_API_KEY)
+    model_config = SettingsConfigDict(case_sensitive=False, env_file=".env", env_file_encoding="utf-8")
+
+    # Note: env file loading disabled to avoid parsing issues; defaults used in tests
 
     @property
     def database_url_sync(self) -> str:

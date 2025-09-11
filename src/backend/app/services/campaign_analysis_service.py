@@ -3,12 +3,17 @@ Enhanced Campaign Analysis Service for Link Dive AI
 Implements campaign-specific backlink analysis with coverage classification
 """
 from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 import logging
 from urllib.parse import urlparse
 import re
 
 from .link_analysis_service import LinkAnalysisService
+from app.services.external.ahrefs_client import ahrefs_client
+from app.services.external.dataforseo_client import dataforseo_client
+from app.database.repository import CampaignRepository
+from app.database.models import BacklinkResult, ContentAnalysis
+from app.core.database import get_db
 from app.models.campaign import (
     CampaignResponse,
     BacklinkResultResponse
@@ -26,22 +31,18 @@ class CampaignAnalysisService:
         campaign: Dict[str, Any],
         analysis_depth: str = "standard"
     ) -> Dict[str, Any]:
-        """
-        Comprehensive campaign analysis following the specification requirements
-        
-        Args:
-            campaign: Campaign data dictionary
-            analysis_depth: "quick", "standard", or "deep"
-        
+        """Run comprehensive analysis and persist results.
+
         Returns:
-            Dictionary with campaign analysis results
+            Dict with keys: campaign_id, analysis_timestamp, verified_coverage, potential_coverage,
+            excluded_results, summary, analysis_steps (and error key on failure).
         """
         try:
             self.logger.info(f"Starting comprehensive analysis for campaign {campaign.get('id')}")
             
             results = {
                 "campaign_id": campaign.get("id"),
-                "analysis_timestamp": datetime.utcnow().isoformat(),
+                "analysis_timestamp": datetime.now(timezone.utc).isoformat(),
                 "analysis_depth": analysis_depth,
                 "verified_coverage": [],
                 "potential_coverage": [],
@@ -89,6 +90,40 @@ class CampaignAnalysisService:
                 self.logger.info("Step 4: Content relevance analysis")
                 results = await self._analyze_content_relevance(results, campaign)
                 results["analysis_steps"].append("content_analysis")
+
+            # Step 5: Persist results via repository (upsert mechanics handled there)
+            try:
+                db = next(get_db())
+                repo = CampaignRepository(db)
+                persist_payload = []
+                for r in results["verified_coverage"] + results["potential_coverage"]:
+                    persist_payload.append({
+                        "url": r.get("url"),
+                        "page_title": r.get("page_title"),
+                        "first_seen": r.get("first_seen"),
+                        "last_seen": r.get("last_seen"),
+                        "coverage_status": "verified" if r in results["verified_coverage"] else "potential",
+                        "source_api": r.get("source_api", "ahrefs"),
+                        "domain_rating": r.get("domain_rating"),
+                        "confidence_score": r.get("confidence_score")
+                    })
+                if persist_payload:
+                    repo.add_backlink_results(campaign.get("id"), persist_payload)
+
+                # Persist content analysis rows (link by URL lookup)
+                backlink_map = {b.url: b for b in repo.get_backlink_results(campaign.get("id"), campaign.get("user_email", "demo@linkdive.ai"))}
+                for r in results["verified_coverage"] + results["potential_coverage"]:
+                    if "content_relevance_score" in r:
+                        br = backlink_map.get(r.get("url"))
+                        if br:
+                            existing_ca = db.query(ContentAnalysis).filter(ContentAnalysis.backlink_result_id == br.id).first()
+                            if not existing_ca:
+                                ca = ContentAnalysis(backlink_result_id=br.id, score=float(r.get("content_relevance_score")), keyword_hits=None, raw_excerpt=None, hash=None)
+                                db.add(ca)
+                db.commit()
+                results["analysis_steps"].append("persistence")
+            except Exception as pe:
+                self.logger.error(f"Persistence step failed: {pe}")
             
             # Update summary
             results["summary"]["total_results"] = (
@@ -106,7 +141,7 @@ class CampaignAnalysisService:
             self.logger.error(f"Campaign analysis failed: {str(e)}")
             return {
                 "campaign_id": campaign.get("id"),
-                "analysis_timestamp": datetime.utcnow().isoformat(),
+                "analysis_timestamp": datetime.now(timezone.utc).isoformat(),
                 "error": str(e),
                 "verified_coverage": [],
                 "potential_coverage": [],
@@ -125,30 +160,54 @@ class CampaignAnalysisService:
             return results
         
         try:
-            # Use existing link analysis service to get backlinks to campaign URL
-            domain = urlparse(campaign_url).netloc
-            backlink_profile = await self.link_analyzer.get_backlink_profile(domain)
-            
-            # Filter for backlinks that point to the specific campaign URL
-            for backlink in backlink_profile.backlinks:
-                if campaign_url in backlink.url_to or self._urls_match(backlink.url_to, campaign_url):
-                    result = {
-                        "id": len(results) + 1,
-                        "url": backlink.url_from,
-                        "page_title": self._extract_title_from_url(backlink.url_from),
-                        "first_seen": backlink.first_seen.date() if backlink.first_seen else None,
-                        "last_seen": backlink.last_seen.date() if backlink.last_seen else None,
-                        "coverage_status": "verified",  # Direct links to campaign URL
-                        "source_api": "ahrefs",
-                        "domain_rating": backlink.domain_rating,
-                        "confidence_score": "0.95",  # High confidence for direct links
-                        "classification_reason": "direct_campaign_url_link",
-                        "anchor_text": backlink.anchor_text,
-                        "link_type": backlink.link_type
-                    }
-                    results.append(result)
-            
-            self.logger.info(f"Found {len(results)} direct campaign URL backlinks")
+            # Fetch backlinks to the specific campaign URL directly from providers (live when creds configured)
+            fetched: List[Any] = []  # type: ignore[name-defined]
+            try:
+                ahrefs_items = await ahrefs_client.fetch_backlinks(target=campaign_url, limit=50)
+                fetched.extend(ahrefs_items)
+            except Exception as ae:
+                self.logger.warning(f"Ahrefs campaign URL fetch failed: {ae}")
+
+            try:
+                dfs_items = await dataforseo_client.fetch_backlinks(target=campaign_url, limit=50)
+                fetched.extend(dfs_items)
+            except Exception as de:
+                self.logger.warning(f"DataForSEO campaign URL fetch failed: {de}")
+
+            # De-dupe by source URL
+            seen = set()
+            for r in fetched:
+                url_from = getattr(r, 'url_from', '')
+                if not url_from or url_from in seen:
+                    continue
+                seen.add(url_from)
+                first_seen_raw = getattr(r, 'first_seen', None)
+                first_seen_date = None
+                try:
+                    if first_seen_raw:
+                        first_seen_date = datetime.fromisoformat(first_seen_raw).date() if len(first_seen_raw) > 10 else datetime.strptime(first_seen_raw, "%Y-%m-%d").date()
+                except Exception:
+                    first_seen_date = None
+
+                result = {
+                    "id": len(results) + 1,
+                    "url": url_from,
+                    "page_title": self._extract_title_from_url(url_from),
+                    "first_seen": first_seen_date,
+                    "last_seen": first_seen_date,
+                    "coverage_status": "verified",  # direct to campaign URL per spec
+                    "source_api": getattr(r, 'source_api', 'ahrefs'),
+                    "domain_rating": getattr(r, 'domain_rating', None),
+                    "confidence_score": "0.95",
+                    "classification_reason": "direct_campaign_url_link",
+                    "anchor_text": getattr(r, 'title', ''),
+                    "link_type": "dofollow",
+                    "target_url": getattr(r, 'url_to', campaign_url),
+                    "link_destination": "Blog Page" if "/blog/" in campaign_url else "other",
+                }
+                results.append(result)
+
+            self.logger.info(f"Found {len(results)} direct campaign URL backlinks (providers)")
             return results
             
         except Exception as e:
@@ -167,34 +226,101 @@ class CampaignAnalysisService:
             return results
         
         try:
-            # Get comprehensive domain backlinks
-            backlink_profile = await self.link_analyzer.get_backlink_profile(client_domain)
-            
-            # Convert to results format
-            for backlink in backlink_profile.backlinks:
+            # Determine last fetch timestamp from DB for incremental filtering
+            last_fetch_at: Optional[datetime] = None
+            try:
+                db_prefetch = next(get_db())
+                repo_prefetch = CampaignRepository(db_prefetch)
+                db_c = repo_prefetch.get_campaign_by_id(campaign.get("id"), campaign.get("user_email", "demo@linkdive.ai"))
+                if db_c and db_c.last_backlink_fetch_at:
+                    last_fetch_at = db_c.last_backlink_fetch_at
+            except Exception as lf_err:
+                self.logger.warning(f"Could not prefetch last_backlink_fetch_at: {lf_err}")
+
+            # Fetch backlink records using external clients (merge results, avoid duplicates)
+            backlink_records: List[Any] = []  # type: ignore[name-defined]
+            seen_pairs = set()
+            target_url = f"https://{client_domain}"
+            try:
+                ahrefs = await ahrefs_client.fetch_backlinks(target=target_url, limit=50)
+                for r in ahrefs:
+                    k = (getattr(r, 'url_from', ''), getattr(r, 'source_api', 'ahrefs'))
+                    if k in seen_pairs:
+                        continue
+                    seen_pairs.add(k)
+                    backlink_records.append(r)
+            except Exception as ae:
+                self.logger.warning(f"Ahrefs fetch failed: {ae}")
+            try:
+                dfs = await dataforseo_client.fetch_backlinks(target=target_url, limit=50)
+                for r in dfs:
+                    k = (getattr(r, 'url_from', ''), getattr(r, 'source_api', 'dataforseo'))
+                    if k in seen_pairs:
+                        continue
+                    seen_pairs.add(k)
+                    backlink_records.append(r)
+            except Exception as de:
+                self.logger.warning(f"DataForSEO fetch failed: {de}")
+
+            def _parse_first_seen(val: Any) -> Optional[date]:
+                if isinstance(val, date):
+                    return val
+                if isinstance(val, str):
+                    try:
+                        # Accept date or datetime strings
+                        if len(val) == 10:  # YYYY-MM-DD
+                            return datetime.strptime(val, "%Y-%m-%d").date()
+                        return datetime.fromisoformat(val).date()
+                    except Exception:
+                        return None
+                return None
+
+            # Convert to results format with incremental filter
+            new_results_counter = 0
+            for backlink in backlink_records:
                 # Skip if this is already covered in campaign URL analysis
                 campaign_url = campaign.get("campaign_url", "")
-                if campaign_url and (campaign_url in backlink.url_to or self._urls_match(backlink.url_to, campaign_url)):
+                if campaign_url and (campaign_url in getattr(backlink, 'url_to', '') or self._urls_match(getattr(backlink, 'url_to', ''), campaign_url)):
                     continue
-                
+                url_from = getattr(backlink, 'url_from', '')
+                first_seen_raw = getattr(backlink, 'first_seen', None)
+                first_seen_date = _parse_first_seen(first_seen_raw)
+                # Incremental filter: if we have a previous fetch, only include strictly newer first_seen
+                if last_fetch_at and first_seen_date and first_seen_date <= last_fetch_at.date():
+                    continue
                 result = {
                     "id": len(results) + 1,
-                    "url": backlink.url_from,
-                    "page_title": self._extract_title_from_url(backlink.url_from),
-                    "first_seen": backlink.first_seen.date() if backlink.first_seen else None,
-                    "last_seen": backlink.last_seen.date() if backlink.last_seen else None,
+                    "url": url_from,
+                    "page_title": self._extract_title_from_url(url_from),
+                    "first_seen": first_seen_date,
+                    "last_seen": None,
                     "coverage_status": "potential",  # Will be reclassified
-                    "source_api": "ahrefs",
-                    "domain_rating": backlink.domain_rating,
+                    "source_api": getattr(backlink, 'source_api', 'ahrefs'),
+                    "domain_rating": getattr(backlink, 'domain_rating', None),
                     "confidence_score": "0.75",  # Medium confidence for domain links
                     "classification_reason": "domain_wide_link",
-                    "anchor_text": backlink.anchor_text,
-                    "link_type": backlink.link_type,
-                    "target_url": backlink.url_to
+                    "anchor_text": getattr(backlink, 'title', ''),
+                    "link_type": "dofollow",
+                    "target_url": getattr(backlink, 'url_to', '')
                 }
                 results.append(result)
-            
-            self.logger.info(f"Found {len(results)} domain-wide backlinks")
+                new_results_counter += 1
+
+            # Update last_backlink_fetch_at timestamp if we attempted a fetch (even if zero new; signals freshness)
+            try:
+                db = next(get_db())
+                repo = CampaignRepository(db)
+                db_campaign = repo.get_campaign_by_id(campaign.get("id"), campaign.get("user_email", "demo@linkdive.ai"))
+                if db_campaign:
+                    # Store timezone-aware UTC timestamp for incremental fetch logic
+                    db_campaign.last_backlink_fetch_at = datetime.now(timezone.utc)
+                    db.commit()
+            except Exception as ts_e:
+                self.logger.warning(f"Failed updating last_backlink_fetch_at: {ts_e}")
+
+            self.logger.info(
+                f"Domain-wide backlinks processed: total_fetched={len(backlink_records)} new_results={new_results_counter} last_fetch_at_prev={last_fetch_at}"
+            )
             return results
             
         except Exception as e:
@@ -395,7 +521,9 @@ class CampaignAnalysisService:
                     coverage_status="verified",
                     source_api=result.get("source_api", "ahrefs"),
                     domain_rating=result.get("domain_rating"),
-                    confidence_score=result.get("confidence_score")
+                    confidence_score=result.get("confidence_score"),
+                    link_destination=result.get("link_destination"),
+                    content_relevance_score=result.get("content_relevance_score")
                 )
                 all_results.append(backlink_result)
             
@@ -408,7 +536,9 @@ class CampaignAnalysisService:
                     coverage_status="potential",
                     source_api=result.get("source_api", "ahrefs"),
                     domain_rating=result.get("domain_rating"),
-                    confidence_score=result.get("confidence_score")
+                    confidence_score=result.get("confidence_score"),
+                    link_destination=result.get("link_destination"),
+                    content_relevance_score=result.get("content_relevance_score")
                 )
                 all_results.append(backlink_result)
             

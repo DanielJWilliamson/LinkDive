@@ -4,6 +4,7 @@ Service aggregator for combining Ahrefs and DataForSEO data.
 import asyncio
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
+from app.utils.datetime_utils import utc_now, iso_utc_now
 import logging
 import sys
 import os
@@ -12,8 +13,8 @@ import os
 backend_root = os.path.join(os.path.dirname(__file__), '..', '..')
 sys.path.insert(0, backend_root)
 
-from .ahrefs_client import AhrefsClient
-from .dataforseo_client import DataForSEOClient
+from .external.ahrefs_client import AhrefsClient
+from .external.dataforseo_client import DataForSeoClient
 from .base_api import APIResponse, MockAPIClient
 from app.models.backlink import BacklinkProfile, ReferringDomain, Backlink
 from app.models.analysis import QualityScore, CompetitorInsight, LinkOpportunity, RiskAlert
@@ -53,7 +54,7 @@ class LinkAnalysisService:
         else:
             self.logger.info("Using real API clients with live credentials")
             self.ahrefs = AhrefsClient() if has_ahrefs_key else None
-            self.dataforseo = DataForSEOClient() if has_dataforseo_creds else None
+            self.dataforseo = DataForSeoClient() if has_dataforseo_creds else None
             
             if not self.ahrefs and not self.dataforseo:
                 self.logger.warning("No API credentials available, falling back to mock data")
@@ -75,7 +76,7 @@ class LinkAnalysisService:
             # Process results
             analysis = {
                 "domain": domain,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": iso_utc_now(),
                 "sources": {},
                 "aggregated_metrics": {},
                 "recommendations": []
@@ -119,7 +120,7 @@ class LinkAnalysisService:
             self.logger.error(f"Comprehensive analysis failed for {domain}: {str(e)}")
             return {
                 "domain": domain,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": iso_utc_now(),
                 "error": str(e),
                 "sources": {},
                 "aggregated_metrics": {},
@@ -176,7 +177,7 @@ class LinkAnalysisService:
                 average_domain_rating=sum(bl.domain_rating for bl in backlinks if bl.domain_rating) / len(backlinks) if backlinks else None,
                 backlinks=backlinks[:100],  # Limit for response size
                 referring_domains=referring_domains[:50],
-                last_analyzed=datetime.utcnow()
+                last_analyzed=utc_now()
             )
             
         except Exception as e:
@@ -190,7 +191,7 @@ class LinkAnalysisService:
                 nofollow_backlinks=0,
                 backlinks=[],
                 referring_domains=[],
-                last_analyzed=datetime.utcnow()
+                last_analyzed=utc_now()
             )
     
     async def analyze_competitor_gaps(
@@ -258,7 +259,7 @@ class LinkAnalysisService:
             "backlinks_count": None,
             "referring_domains": None,
             "organic_traffic": None,
-            "data_freshness": datetime.utcnow().isoformat(),
+            "data_freshness": iso_utc_now(),
             "confidence_score": 0
         }
         
@@ -294,8 +295,8 @@ class LinkAnalysisService:
                 anchor_text=item.get("anchor", ""),
                 domain_rating=item.get("domain_rating", 0),
                 url_rating=item.get("url_rating", 0),
-                first_seen=datetime.fromisoformat(item.get("first_seen", datetime.utcnow().isoformat())),
-                last_seen=datetime.fromisoformat(item.get("last_seen", datetime.utcnow().isoformat())),
+                first_seen=datetime.fromisoformat(item.get("first_seen", utc_now().isoformat())),
+                last_seen=datetime.fromisoformat(item.get("last_seen", utc_now().isoformat())),
                 link_type=item.get("link_type", "unknown"),
                 is_redirect=item.get("is_redirect", False),
                 is_canonical=item.get("is_canonical", False),
@@ -319,8 +320,8 @@ class LinkAnalysisService:
                         anchor_text=item.get("anchor", ""),
                         domain_rating=item.get("domain_rank", 0),
                         url_rating=item.get("page_rank", 0),
-                        first_seen=datetime.fromisoformat(item.get("first_seen", datetime.utcnow().isoformat())),
-                        last_seen=datetime.fromisoformat(item.get("last_seen", datetime.utcnow().isoformat())),
+                        first_seen=datetime.fromisoformat(item.get("first_seen", utc_now().isoformat())),
+                        last_seen=datetime.fromisoformat(item.get("last_seen", utc_now().isoformat())),
                         link_type="dofollow" if not item.get("nofollow") else "nofollow",
                         is_redirect=item.get("redirect", False),
                         is_canonical=False,  # Would need additional processing
@@ -339,8 +340,8 @@ class LinkAnalysisService:
                 domain=item.get("domain", ""),
                 domain_rating=item.get("domain_rating", 0),
                 backlinks_count=item.get("backlinks", 0),
-                first_seen=datetime.fromisoformat(item.get("first_seen", datetime.utcnow().isoformat())),
-                last_seen=datetime.fromisoformat(item.get("last_seen", datetime.utcnow().isoformat())),
+                first_seen=datetime.fromisoformat(item.get("first_seen", utc_now().isoformat())),
+                last_seen=datetime.fromisoformat(item.get("last_seen", utc_now().isoformat())),
                 link_type_distribution={
                     "dofollow": item.get("dofollow", 0),
                     "nofollow": item.get("nofollow", 0)
@@ -384,7 +385,7 @@ class LinkAnalysisService:
                         description=f"Potentially toxic backlink from {item.get('source_url', 'unknown')}",
                         affected_urls=[item.get("target_url", "")],
                         recommendation="Consider disavowing this link",
-                        detected_date=datetime.utcnow()
+                        detected_date=utc_now()
                     )
                     risks.append(risk)
         
@@ -401,7 +402,7 @@ class LinkAnalysisService:
                 description=f"Broken backlink from {item.get('url_from', 'unknown')}",
                 affected_urls=[item.get("url_to", "")],
                 recommendation="Fix the target URL or contact the linking site",
-                detected_date=datetime.utcnow()
+                detected_date=utc_now()
             )
             risks.append(risk)
         
@@ -413,16 +414,16 @@ class LinkAnalysisService:
             # Convert top referring domains to ReferringDomain objects
             referring_domains = []
             for domain_data in mock_data.get("top_referring_domains", []):
+                do_count = domain_data.get("backlinks", 0) if domain_data.get("link_type") == "dofollow" else 0
+                no_count = domain_data.get("backlinks", 0) if domain_data.get("link_type") == "nofollow" else 0
                 referring_domain = ReferringDomain(
                     domain=domain_data.get("domain", ""),
                     domain_rating=domain_data.get("domain_rating", 0),
                     backlinks_count=domain_data.get("backlinks", 0),
-                    first_seen=datetime.fromisoformat(domain_data.get("first_seen", datetime.utcnow().isoformat())),
-                    last_seen=datetime.fromisoformat(domain_data.get("last_seen", datetime.utcnow().isoformat())),
-                    link_type_distribution={
-                        "dofollow": domain_data.get("backlinks", 0) if domain_data.get("link_type") == "dofollow" else 0,
-                        "nofollow": domain_data.get("backlinks", 0) if domain_data.get("link_type") == "nofollow" else 0
-                    }
+                    first_seen=datetime.fromisoformat(domain_data.get("first_seen", utc_now().isoformat())),
+                    last_seen=datetime.fromisoformat(domain_data.get("last_seen", utc_now().isoformat())),
+                    dofollow_links=do_count,
+                    nofollow_links=no_count,
                 )
                 referring_domains.append(referring_domain)
             
@@ -436,9 +437,10 @@ class LinkAnalysisService:
                         anchor_text=anchor,
                         domain_rating=domain_data.get("domain_rating", 0),
                         url_rating=domain_data.get("url_rating", domain_data.get("domain_rating", 0) - 5),
-                        first_seen=datetime.fromisoformat(domain_data.get("first_seen", datetime.utcnow().isoformat())),
-                        last_seen=datetime.fromisoformat(domain_data.get("last_seen", datetime.utcnow().isoformat())),
+                        first_seen=datetime.fromisoformat(domain_data.get("first_seen", utc_now().isoformat())),
+                        last_seen=datetime.fromisoformat(domain_data.get("last_seen", utc_now().isoformat())),
                         link_type=domain_data.get("link_type", "dofollow"),
+                        data_source="mock",
                         is_redirect=False,
                         is_canonical=False,
                         is_alternate=False
@@ -446,7 +448,7 @@ class LinkAnalysisService:
                     backlinks.append(backlink)
             
             # Parse last analyzed date
-            last_analyzed = datetime.fromisoformat(mock_data.get("last_analyzed", datetime.utcnow().isoformat()).replace('Z', '+00:00'))
+            last_analyzed = datetime.fromisoformat(mock_data.get("last_analyzed", utc_now().isoformat()).replace('Z', '+00:00'))
             
             return BacklinkProfile(
                 target_url=mock_data.get("target_url", ""),
@@ -473,5 +475,5 @@ class LinkAnalysisService:
                 nofollow_backlinks=0,
                 backlinks=[],
                 referring_domains=[],
-                last_analyzed=datetime.utcnow()
+                last_analyzed=utc_now()
             )

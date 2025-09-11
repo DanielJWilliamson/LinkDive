@@ -102,8 +102,8 @@ export function CreateCampaignModal({
       // Clean up empty array items and ensure non-empty arrays
       const cleanedData = {
         ...formData,
-        serp_keywords: formData.serp_keywords.filter(k => k.trim()) || [''],
-        verification_keywords: formData.verification_keywords.filter(k => k.trim()) || [''],
+        serp_keywords: formData.serp_keywords.filter(k => k.trim()),
+        verification_keywords: formData.verification_keywords.filter(k => k.trim()),
         blacklist_domains: formData.blacklist_domains.filter(d => d.trim())
       };
 
@@ -115,6 +115,14 @@ export function CreateCampaignModal({
 
       console.log('Submitting campaign data:', cleanedData);
       await onSubmit(cleanedData);
+      // Simple client-side success notification (lightweight, replace with toast lib later)
+      if (typeof window !== 'undefined') {
+        try {
+          window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Campaign created' } }));
+        } catch {
+          /* noop */
+        }
+      }
       
       // Reset form
       setFormData({
@@ -131,6 +139,25 @@ export function CreateCampaignModal({
       setErrors({});
     } catch (error) {
       console.error('Failed to create campaign:', error);
+      let message = 'Failed to create campaign';
+      if (typeof error === 'object' && error && 'response' in (error as Record<string, unknown>)) {
+        const resp = (error as Record<string, unknown>)["response"] as Record<string, unknown> | undefined;
+        const data = resp && (resp["data"] as Record<string, unknown> | undefined);
+        const detail = data && (data["detail"] as Record<string, unknown> | undefined);
+        const errObj = detail && (detail["error"] as Record<string, unknown> | undefined);
+        if (errObj) {
+          const directMsg = errObj["message"] as string | undefined;
+          const fieldErrors = errObj["field_errors"] as Record<string, string> | undefined;
+            if (directMsg) message = directMsg; else if (fieldErrors) message = 'Validation error';
+        }
+      }
+      if (typeof window !== 'undefined') {
+        try {
+          window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message } }));
+        } catch {
+          /* noop */
+        }
+      }
     }
   };
 
