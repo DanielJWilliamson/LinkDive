@@ -148,6 +148,15 @@ Each campaign you create will deliver:
 
    The server will start at: **http://127.0.0.1:8000**
 
+4. **Start the frontend and open the app:**
+  ```bash
+  cd ../frontend
+  npm install
+  npm run dev
+  ```
+
+  The frontend runs at: **http://localhost:3000** — open it in your browser to view the campaigns dashboard.
+
 ### 📖 API Documentation
 
 Once the server is running, explore the interactive documentation:
@@ -206,11 +215,6 @@ Note: When Live mode is enabled and provider credentials don’t have the requir
 ![Campaign Creation Step 3](docs/images/campaign-creation-step3.png)
 
 *Campaign creation form - Step 3: Optional domain blacklist configuration and campaign summary review before creation.*
-
-### Frontend - Connection Error Handling
-![LinkDive Connection Error](docs/images/linkdive-connection-error.png)
-
-*Graceful error handling when backend services are unavailable, with clear user messaging.*
 
 ### Backend - API Documentation Overview
 ![LinkDive API Documentation](docs/images/linkdive-api-docs.png)
