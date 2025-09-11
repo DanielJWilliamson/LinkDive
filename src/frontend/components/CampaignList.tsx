@@ -33,15 +33,21 @@ export function CampaignList({
   const [statusFilter, setStatusFilter] = useState<'all' | 'live' | 'paused'>('all');
 
   const filteredCampaigns = campaigns.filter(campaign => {
-    const matchesSearch = 
-      campaign.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      campaign.campaign_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      campaign.client_domain.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = 
-      statusFilter === 'all' || 
+    // Normalize strings: lowercase and strip non-alphanumeric for punctuation-agnostic matching
+    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const term = normalize(searchTerm);
+
+    // Empty term should match all
+    const matchesSearch = term === ''
+      ? true
+      : normalize(campaign.client_name).includes(term) ||
+        normalize(campaign.campaign_name).includes(term);
+
+    // Status filter remains combined with search
+    const matchesStatus =
+      statusFilter === 'all' ||
       campaign.monitoring_status.toLowerCase() === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -95,10 +101,12 @@ export function CampaignList({
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search campaigns, clients, or domains..."
+                  placeholder="Search by campaign or client name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  aria-label="Search campaigns"
+                  data-testid="campaigns-search-input"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-700"
                 />
               </div>
             </div>
@@ -106,11 +114,11 @@ export function CampaignList({
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as 'all' | 'live' | 'paused')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
               >
-                <option value="all">All Statuses</option>
-                <option value="live">Live</option>
-                <option value="paused">Paused</option>
+                <option value="all" className="text-gray-900">All Statuses</option>
+                <option value="live" className="text-gray-900">Live</option>
+                <option value="paused" className="text-gray-900">Paused</option>
               </select>
             </div>
           </div>
@@ -146,6 +154,7 @@ export function CampaignList({
                 key={campaign.id}
                 onClick={() => onCampaignSelect(campaign)}
                 className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                data-testid="campaign-card"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">

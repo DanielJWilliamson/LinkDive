@@ -1,5 +1,23 @@
 # LinkDive AI - Digital PR Campaign Monitoring Platform
 
+> Quick start (Windows, PowerShell)
+
+- Backend: start API on http://127.0.0.1:8000
+
+```powershell
+cd c:\source\TestInts\Kaizen\KaizenTest\src\backend
+./start_server.bat
+```
+
+- Frontend: start Next.js on http://localhost:3000
+
+```powershell
+cd c:\source\TestInts\Kaizen\KaizenTest\src\frontend
+npm install --no-audit --no-fund
+npm run dev
+```
+
+
 **Automatically discover and monitor all potential online media coverage of your Digital PR campaigns.**
 
 LinkDive AI is an intelligent campaign monitoring tool that helps PR agencies and digital marketers track the success of their campaigns by automatically discovering when their content has been mentioned, linked to, or covered across the web. The platform combines multiple data sources and AI-powered content verification to provide comprehensive coverage reporting.

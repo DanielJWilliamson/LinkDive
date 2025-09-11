@@ -70,7 +70,7 @@ export function DomainInput({ onSearch, isLoading = false }: DomainInputProps) {
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
             placeholder="Enter domain to analyze (e.g., example.com)"
-            className={`block w-full pl-10 pr-12 py-3 border rounded-lg text-sm placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+            className={`block w-full pl-10 pr-12 py-3 border rounded-lg text-sm text-gray-900 placeholder-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
               error ? 'border-red-300' : 'border-gray-300'
             }`}
             disabled={isLoading}
