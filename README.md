@@ -9,7 +9,7 @@ cd c:\source\TestInts\Kaizen\KaizenTest\src\backend
 ./start_server.bat
 ```
 
-- Frontend: start Next.js on http://localhost:3000
+- Frontend: start on http://localhost:3000
 
 ```powershell
 cd c:\source\TestInts\Kaizen\KaizenTest\src\frontend
