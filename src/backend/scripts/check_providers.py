@@ -10,10 +10,15 @@ if str(BACKEND_ROOT) not in sys.path:
 from app.services.external.ahrefs_client import AhrefsClient
 from app.services.external.dataforseo_client import DataForSeoClient
 from config.settings import settings
+from app.core.runtime_flags import runtime_flags
 import httpx
 import base64
 
 async def main():
+    # Allow forcing live mode from CLI without touching .env
+    if any(arg in ("--live", "-l") for arg in sys.argv[1:]):
+        runtime_flags.set_mock_mode(False)
+
     target_url = "https://openai.com"
     target_domain = "openai.com"
     print("Settings summary:")
@@ -21,6 +26,7 @@ async def main():
     print("- AHREFS_API_KEY present:", bool(settings.AHREFS_API_KEY or settings.ahrefs_api_key))
     print("- DATAFORSEO_BASE_URL:", settings.dataforseo_base_url)
     print("- DATAFORSEO creds present:", bool((settings.DATAFORSEO_USERNAME or settings.dataforseo_username) and (settings.DATAFORSEO_PASSWORD or settings.dataforseo_password)))
+    print("- Mock mode enabled:", runtime_flags.is_mock_mode())
 
     ahrefs = AhrefsClient()
     dfs = DataForSeoClient()
@@ -33,6 +39,42 @@ async def main():
             print("-", r)
     except Exception as e:
         print("Ahrefs error:", e)
+
+    # Raw Ahrefs v3 probe
+    try:
+        if "api.ahrefs.com/v3" in settings.ahrefs_base_url:
+            params = {
+                "aggregation": "all",
+                "history": "live",
+                "limit": 3,
+                "mode": "prefix",
+                "protocol": "both",
+                "select": "url_from,title,first_seen_link,domain_rating_source,url_to",
+                "target": "www.chill.ie/blog/the-counties-with-the-most-affordable-homes/",
+            }
+            headers = {
+                "Authorization": f"Bearer {settings.AHREFS_API_KEY or settings.ahrefs_api_key}",
+                "Content-Type": "application/json",
+            }
+            url = settings.ahrefs_base_url.rstrip('/') + "/site-explorer/all-backlinks"
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.get(url, params=params, headers=headers)
+                print("Ahrefs v3 raw status:", resp.status_code)
+                try:
+                    data = resp.json()
+                    if isinstance(data, dict):
+                        print("Ahrefs v3 fields:", list(data.keys())[:6])
+                        # best-effort inspection of typical shapes
+                        if "data" in data:
+                            rows = data["data"].get("rows") if isinstance(data["data"], dict) else None
+                            if isinstance(rows, list):
+                                print("Ahrefs v3 rows_count:", len(rows))
+                        if "error" in data:
+                            print("Ahrefs v3 error:", data.get("error"))
+                except Exception as je:
+                    print("Ahrefs v3 JSON parse error:", je)
+    except Exception as e:
+        print("Ahrefs v3 raw error:", e)
 
     # Raw Ahrefs v2 probe
     try:

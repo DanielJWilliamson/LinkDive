@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient, DEV_USER_EMAIL } from '../../lib/api';
 
 interface BackgroundTask {
   id: string;
@@ -25,59 +26,31 @@ interface CreateTaskResponse {
   estimated_duration_minutes: number;
 }
 
-const API_BASE = 'http://localhost:8000/api';
-const DEV_USER_EMAIL = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_DEV_USER_EMAIL) || 'demo@linkdive.ai';
-const withAuthHeaders = (init: RequestInit = {}): RequestInit => {
-  return {
-    ...init,
-    headers: {
-      'X-User-Email': DEV_USER_EMAIL,
-      'Content-Type': 'application/json',
-      ...(init.headers || {}),
-    },
-  };
-};
+// Base API prefix for background routes
+const API_PREFIX = '/api/background';
 
 // Fetch task status
 const fetchTaskStatus = async (taskId: string, userEmail: string): Promise<BackgroundTask> => {
-  const response = await fetch(
-    `${API_BASE}/background/tasks/${taskId}?user_email=${encodeURIComponent(userEmail)}`,
-    withAuthHeaders()
-  );
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch task status: ${response.statusText}`);
-  }
-  
-  return response.json();
+  const { data } = await apiClient.get(`${API_PREFIX}/tasks/${taskId}`, {
+    params: { user_email: userEmail },
+  });
+  return data;
 };
 
 // Fetch task result
 const fetchTaskResult = async (taskId: string, userEmail: string) => {
-  const response = await fetch(
-    `${API_BASE}/background/tasks/${taskId}/result?user_email=${encodeURIComponent(userEmail)}`,
-    withAuthHeaders()
-  );
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch task result: ${response.statusText}`);
-  }
-  
-  return response.json();
+  const { data } = await apiClient.get(`${API_PREFIX}/tasks/${taskId}/result`, {
+    params: { user_email: userEmail },
+  });
+  return data;
 };
 
 // Fetch all tasks for user
 const fetchUserTasks = async (userEmail: string, status?: string): Promise<BackgroundTask[]> => {
-  const params = new URLSearchParams({ user_email: userEmail });
-  if (status) params.append('status', status);
-  
-  const response = await fetch(`${API_BASE}/background/tasks?${params}`, withAuthHeaders());
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-  }
-  
-  return response.json();
+  const { data } = await apiClient.get(`${API_PREFIX}/tasks`, {
+    params: { user_email: userEmail, status },
+  });
+  return data;
 };
 
 // Create background task
@@ -85,19 +58,10 @@ const createBackgroundTask = async (
   userEmail: string, 
   taskRequest: TaskRequest
 ): Promise<CreateTaskResponse> => {
-  const response = await fetch(
-    `${API_BASE}/background/tasks?user_email=${encodeURIComponent(userEmail)}`,
-    withAuthHeaders({
-      method: 'POST',
-      body: JSON.stringify(taskRequest),
-    })
-  );
-  
-  if (!response.ok) {
-    throw new Error(`Failed to create task: ${response.statusText}`);
-  }
-  
-  return response.json();
+  const { data } = await apiClient.post(`${API_PREFIX}/tasks`, taskRequest, {
+    params: { user_email: userEmail },
+  });
+  return data;
 };
 
 // Start campaign analysis
@@ -113,36 +77,25 @@ const startCampaignAnalysis = async (
     include_content_verification: includeContentVerification.toString(),
   });
   
-  const response = await fetch(
-    `${API_BASE}/background/campaigns/${campaignId}/analyze?${params}`,
-    withAuthHeaders({ method: 'POST' })
-  );
-  
-  if (!response.ok) {
-    throw new Error(`Failed to start campaign analysis: ${response.statusText}`);
-  }
-  
-  return response.json();
+  const { data } = await apiClient.post(`${API_PREFIX}/campaigns/${campaignId}/analyze`, null, {
+    params: Object.fromEntries(params),
+  });
+  return data;
 };
 
 // Cancel task
 const cancelTask = async (taskId: string, userEmail: string): Promise<void> => {
-  const response = await fetch(
-    `${API_BASE}/background/tasks/${taskId}?user_email=${encodeURIComponent(userEmail)}`,
-    withAuthHeaders({ method: 'DELETE' })
-  );
-  
-  if (!response.ok) {
-    throw new Error(`Failed to cancel task: ${response.statusText}`);
-  }
+  await apiClient.delete(`${API_PREFIX}/tasks/${taskId}`, {
+    params: { user_email: userEmail },
+  });
 };
 
 // React Query hooks
 export const useTaskStatus = (taskId: string, userEmail: string, enabled = true) => {
   return useQuery({
     queryKey: ['taskStatus', taskId, userEmail],
-    queryFn: () => fetchTaskStatus(taskId, userEmail),
-    enabled: enabled && !!taskId && !!userEmail,
+    queryFn: () => fetchTaskStatus(taskId, userEmail || DEV_USER_EMAIL),
+    enabled: enabled && !!taskId && !!(userEmail || DEV_USER_EMAIL),
     refetchInterval: (query) => {
       // Poll more frequently for running tasks
       const data = query.state.data;
@@ -156,16 +109,16 @@ export const useTaskStatus = (taskId: string, userEmail: string, enabled = true)
 export const useTaskResult = (taskId: string, userEmail: string, enabled = true) => {
   return useQuery({
     queryKey: ['taskResult', taskId, userEmail],
-    queryFn: () => fetchTaskResult(taskId, userEmail),
-    enabled: enabled && !!taskId && !!userEmail,
+    queryFn: () => fetchTaskResult(taskId, userEmail || DEV_USER_EMAIL),
+    enabled: enabled && !!taskId && !!(userEmail || DEV_USER_EMAIL),
   });
 };
 
 export const useUserTasks = (userEmail: string, status?: string) => {
   return useQuery({
     queryKey: ['userTasks', userEmail, status],
-    queryFn: () => fetchUserTasks(userEmail, status),
-    enabled: !!userEmail,
+    queryFn: () => fetchUserTasks(userEmail || DEV_USER_EMAIL, status),
+    enabled: !!(userEmail || DEV_USER_EMAIL),
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 };

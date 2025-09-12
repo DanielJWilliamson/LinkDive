@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAggregateCoverage } from '../hooks/useCoverage';
+import { apiClient } from '../lib/api';
 
 export const CoverageSummary: React.FC = () => {
   const { data, isLoading, error } = useAggregateCoverage();
@@ -14,7 +15,7 @@ export const CoverageSummary: React.FC = () => {
         <div className="flex items-center space-x-4">
           <div className="text-sm text-gray-500 hidden sm:block">Across {data.total_campaigns} campaigns</div>
           <a
-            href={`http://127.0.0.1:8000/api/v1/campaigns/${data.campaigns[0]?.campaign_id || 1}/coverage/export?status=all`}
+            href={`${apiClient.defaults.baseURL?.replace(/\/$/, '') || ''}/api/v1/campaigns/${data.campaigns[0]?.campaign_id || 1}/coverage/export?status=all`}
             className="text-sm text-blue-600 hover:underline"
           >Export First Campaign CSV</a>
         </div>

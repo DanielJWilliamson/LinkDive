@@ -5,6 +5,7 @@ import { CampaignList } from '../components/CampaignList';
 import { CoverageSummary } from '../components/CoverageSummary';
 import Link from 'next/link';
 import { CreateCampaignModal } from '../components/CreateCampaignModal';
+import { apiClient, DEV_USER_EMAIL } from '../lib/api';
 import { BacklinkCharts } from '../components/BacklinkCharts';
 import BackgroundTaskMonitor from '../src/components/BackgroundTaskMonitor';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
@@ -74,7 +75,7 @@ export default function Dashboard() {
     try {
       await startCampaignAnalysisMutation.mutateAsync({
         campaignId: selectedCampaign.id,
-        userEmail: 'user@example.com', // TODO: Get from auth context
+        userEmail: DEV_USER_EMAIL, // Fallback dev identity until auth is wired
         analysisDepth: 'standard',
         includeContentVerification: true
       });
@@ -98,7 +99,7 @@ export default function Dashboard() {
             Unable to connect to the Link Dive AI backend. Please ensure the server is running.
           </p>
           <p className="text-sm text-gray-500">
-            Expected backend at: http://127.0.0.1:8000
+            Expected backend at: {apiClient.defaults.baseURL}
           </p>
         </div>
       </div>
@@ -368,7 +369,7 @@ export default function Dashboard() {
 
                   {activeTab === 'tasks' && (
                     <BackgroundTaskMonitor
-                      userEmail="user@example.com" // TODO: Get from auth context
+                      userEmail={DEV_USER_EMAIL}
                       campaignId={selectedCampaign?.id}
                       className="border-0 shadow-none"
                     />

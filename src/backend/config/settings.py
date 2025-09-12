@@ -2,10 +2,15 @@
 Configuration settings for LinkDive application.
 """
 import os
+from pathlib import Path
 from typing import List, Optional, Union
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import ConfigDict
+
+
+# Resolve the backend-local .env file regardless of current working directory
+_BACKEND_ENV_FILE = str((Path(__file__).resolve().parent.parent / ".env").resolve())
 
 
 class Settings(BaseSettings):
@@ -108,9 +113,13 @@ class Settings(BaseSettings):
     log_file: str = "logs/app.log"
 
     # Pydantic v2 configuration
-    # Enable reading from a local .env file so credentials can be supplied without mutating the shell env
+    # Enable reading from the backend-local .env file so credentials load regardless of process CWD
     # Keep case-insensitive env var names for convenience (ahrefs_api_key vs AHREFS_API_KEY)
-    model_config = SettingsConfigDict(case_sensitive=False, env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        case_sensitive=False,
+        env_file=_BACKEND_ENV_FILE,
+        env_file_encoding="utf-8",
+    )
 
     # Note: env file loading disabled to avoid parsing issues; defaults used in tests
 
