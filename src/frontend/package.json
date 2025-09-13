@@ -7,7 +7,8 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "capture:screens": "playwright test tests/e2e/screenshot-capture.spec.ts"
   },
   "dependencies": {
     "@auth/core": "^0.34.2",

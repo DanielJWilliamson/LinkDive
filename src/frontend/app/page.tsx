@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { CheckCircle, Search as SearchIcon } from 'lucide-react';
+import type { BacklinkResult } from '../hooks/useCampaigns';
 import { CampaignList } from '../components/CampaignList';
+import CampaignTable from '../components/CampaignTable';
 import { CoverageSummary } from '../components/CoverageSummary';
 import Link from 'next/link';
 import { CreateCampaignModal } from '../components/CreateCampaignModal';
@@ -16,6 +19,7 @@ import {
   useCreateCampaign, 
   useCampaignResults,
   useAnalyzeCampaign,
+  useCoverageDetails,
   type CampaignFormData 
 } from '../hooks/useCampaigns';
 import { useStartCampaignAnalysis } from '../src/hooks/useBackgroundTasks';
@@ -37,9 +41,26 @@ type ViewMode = 'campaigns' | 'campaign-details';
 
 export default function Dashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>('campaigns');
+  const [homeView, setHomeView] = useState<'cards' | 'table'>(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      const v = (url.searchParams.get('view') || localStorage.getItem('homeView') || 'cards') as 'cards' | 'table';
+      return v === 'table' ? 'table' : 'cards';
+    }
+    return 'cards';
+  });
   const [selectedCampaign, setSelectedCampaign] = useState<LocalCampaign | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'table' | 'charts' | 'tasks'>('table');
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [copyState, setCopyState] = useState<'idle' | 'copying' | 'copied' | 'error'>('idle');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'potential'>('all');
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [sortField, setSortField] = useState<'first_seen' | 'page_title' | 'url' | 'coverage_status' | 'link_destination'>('first_seen');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
 
   // API hooks
   const { data: campaigns = [], isLoading: campaignsLoading, error: campaignsError } = useCampaigns();
@@ -50,6 +71,89 @@ export default function Dashboard() {
     data: campaignResults, 
     isLoading: resultsLoading 
   } = useCampaignResults(selectedCampaign?.id || null);
+
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Coverage details for table
+  const { data: coverageRows = [], isLoading: coverageLoading } = useCoverageDetails(
+    selectedCampaign?.id || null,
+    { status: statusFilter, search: debouncedSearch }
+  );
+
+  // Sort + paginate coverage rows
+  const sortedCoverage = useMemo<BacklinkResult[]>(() => {
+    const arr: BacklinkResult[] = [...coverageRows];
+    const asc = sortDir === 'asc';
+    arr.sort((a, b) => {
+      let cmp = 0;
+      if (sortField === 'first_seen') {
+        const ad = a.first_seen ? new Date(a.first_seen).getTime() : 0;
+        const bd = b.first_seen ? new Date(b.first_seen).getTime() : 0;
+        cmp = ad - bd;
+      } else if (sortField === 'page_title') {
+        cmp = (a.page_title || '').localeCompare(b.page_title || '', undefined, { sensitivity: 'base' });
+      } else if (sortField === 'url') {
+        cmp = (a.url || '').localeCompare(b.url || '', undefined, { sensitivity: 'base' });
+      } else if (sortField === 'coverage_status') {
+        cmp = (a.coverage_status || '').localeCompare(b.coverage_status || '', undefined, { sensitivity: 'base' });
+      } else if (sortField === 'link_destination') {
+        cmp = (a.link_destination || '').localeCompare(b.link_destination || '', undefined, { sensitivity: 'base' });
+      }
+      return asc ? cmp : -cmp;
+    });
+    return arr;
+  }, [coverageRows, sortField, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedCoverage.length / pageSize));
+  useEffect(() => { setPage(1); }, [statusFilter, debouncedSearch, sortField, sortDir, selectedCampaign?.id]);
+  const pagedCoverage = useMemo(() => sortedCoverage.slice((page - 1) * pageSize, page * pageSize), [sortedCoverage, page]);
+
+  // Clear selection when switching campaigns or refreshing results
+  useEffect(() => {
+    setSelectedIds([]);
+    setCopyState('idle');
+  }, [selectedCampaign?.id, campaignResults?.results?.length]);
+
+  const allResultIds = useMemo(() => (sortedCoverage || []).map(r => r.id), [sortedCoverage]);
+  const allSelected = useMemo(() => allResultIds.length > 0 && selectedIds.length === allResultIds.length, [allResultIds, selectedIds]);
+  const someSelected = useMemo(() => selectedIds.length > 0 && selectedIds.length < (allResultIds.length || 0), [allResultIds.length, selectedIds.length]);
+
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIds([]);
+    else setSelectedIds(allResultIds);
+  };
+
+  const toggleRow = (id: number) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const copySelectedUrls = async () => {
+    try {
+      setCopyState('copying');
+  const rows = sortedCoverage || [];
+      let toCopy = rows.filter(r => selectedIds.includes(r.id));
+      // Fallback: if nothing selected, copy verified coverage (common workflow)
+      if (toCopy.length === 0) {
+        toCopy = rows.filter(r => r.coverage_status === 'verified');
+      }
+      const uniqueUrls = Array.from(new Set(toCopy.map(r => r.url)));
+      if (uniqueUrls.length === 0) {
+        setCopyState('idle');
+        return;
+      }
+      await navigator.clipboard.writeText(uniqueUrls.join('\n'));
+      setCopyState('copied');
+      setTimeout(() => setCopyState('idle'), 2000);
+    } catch (e) {
+      console.error('Copy failed', e);
+      setCopyState('error');
+      setTimeout(() => setCopyState('idle'), 2000);
+    }
+  };
 
   const handleCampaignSelect = (campaign: LocalCampaign) => {
     setSelectedCampaign(campaign);
@@ -110,12 +214,74 @@ export default function Dashboard() {
     <ProtectedRoute>
       {viewMode === 'campaigns' ? (
         <div className="space-y-8">
-          <CampaignList
-            campaigns={campaigns}
-            onCampaignSelect={handleCampaignSelect}
-            onNewCampaign={() => setShowCreateModal(true)}
-            isLoading={campaignsLoading}
-          />
+          {/* Home view toggle */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-md p-1" role="tablist" aria-label="Home view">
+                <button
+                  role="tab"
+                  aria-selected={homeView === 'cards'}
+                  data-testid="view-toggle-cards"
+                  onClick={() => {
+                    setHomeView('cards');
+                    if (typeof window !== 'undefined') {
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('view', 'cards');
+                      window.history.replaceState({}, '', url.toString());
+                      localStorage.setItem('homeView', 'cards');
+                    }
+                  }}
+                  className={`px-3 py-1.5 text-sm rounded ${homeView === 'cards' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  Cards
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={homeView === 'table'}
+                  data-testid="view-toggle-table"
+                  onClick={() => {
+                    setHomeView('table');
+                    if (typeof window !== 'undefined') {
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('view', 'table');
+                      window.history.replaceState({}, '', url.toString());
+                      localStorage.setItem('homeView', 'table');
+                    }
+                  }}
+                  className={`px-3 py-1.5 text-sm rounded ${homeView === 'table' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  Table
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {homeView === 'cards' ? (
+            <CampaignList
+              campaigns={campaigns}
+              onCampaignSelect={handleCampaignSelect}
+              onNewCampaign={() => setShowCreateModal(true)}
+              isLoading={campaignsLoading}
+            />
+          ) : (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <CampaignTable
+                campaigns={campaigns}
+                isLoading={campaignsLoading}
+                onRowClick={(c) => handleCampaignSelect({
+                  id: c.id,
+                  client_name: c.client_name,
+                  campaign_name: c.campaign_name,
+                  client_domain: c.client_domain,
+                  campaign_url: c.campaign_url,
+                  launch_date: c.launch_date,
+                  monitoring_status: c.monitoring_status,
+                  created_at: c.created_at,
+                  updated_at: c.updated_at,
+                })}
+              />
+            </div>
+          )}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">Coverage Overview</h2>
@@ -145,15 +311,12 @@ export default function Dashboard() {
               
             {/* Campaign Header */}
             {selectedCampaign && (
-              <div className="mb-8 bg-white rounded-lg border border-gray-200 p-6">
+              <div className="mb-8 bg-white rounded-lg border border-gray-200 p-6" aria-labelledby="campaign-details-heading">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">
-                      {selectedCampaign.campaign_name}
+                    <h1 id="campaign-details-heading" className="text-2xl font-bold text-gray-900">
+                      Campaign View
                     </h1>
-                    <p className="text-gray-600">
-                      {selectedCampaign.client_name} • {selectedCampaign.client_domain}
-                    </p>
                     {selectedCampaign.campaign_url && (
                       <p className="text-sm text-gray-500 mt-1">
                         Target: {selectedCampaign.campaign_url}
@@ -179,9 +342,32 @@ export default function Dashboard() {
                       selectedCampaign.monitoring_status === 'Live'
                         ? 'bg-green-100 text-green-800'
                         : 'bg-gray-100 text-gray-800'
-                    }`}>
+                    }`} data-testid="campaign-status-pill">
                       {selectedCampaign.monitoring_status}
                     </span>
+                  </div>
+                </div>
+                {/* Labeled details grid per spec */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="campaign-details-grid">
+                  <div className="flex">
+                    <div className="w-48 text-sm text-gray-600">Client Name</div>
+                    <div className="text-sm text-gray-900" data-testid="campaign-client-name">{selectedCampaign.client_name}</div>
+                  </div>
+                  <div className="flex">
+                    <div className="w-48 text-sm text-gray-600">Campaign Name</div>
+                    <div className="text-sm text-gray-900" data-testid="campaign-name">{selectedCampaign.campaign_name}</div>
+                  </div>
+                  <div className="flex">
+                    <div className="w-48 text-sm text-gray-600">Start Date</div>
+                    <div className="text-sm text-gray-900" data-testid="campaign-start-date">{selectedCampaign.launch_date ? new Date(selectedCampaign.launch_date).toLocaleDateString() : '—'}</div>
+                  </div>
+                  <div className="flex">
+                    <div className="w-48 text-sm text-gray-600">Monitoring Status</div>
+                    <div className="text-sm text-gray-900" data-testid="campaign-monitoring-status">{selectedCampaign.monitoring_status}</div>
+                  </div>
+                  <div className="flex">
+                    <div className="w-48 text-sm text-gray-600">Client Domain</div>
+                    <div className="text-sm text-gray-900" data-testid="campaign-client-domain">{selectedCampaign.client_domain}</div>
                   </div>
                 </div>
               </div>
@@ -264,16 +450,42 @@ export default function Dashboard() {
                 <div className="p-6">
                   {activeTab === 'table' && (
                     <div>
-                      {campaignResults.results.length > 0 ? (
+                      {coverageRows.length > 0 ? (
                         <div className="space-y-4">
                           {/* Copy to Clipboard Button */}
-                          <div className="flex justify-between items-center">
+                          <div className="sticky top-0 z-10 bg-white flex flex-col md:flex-row md:items-center md:justify-between gap-3 py-1">
                             <h3 className="text-lg font-medium text-gray-900">
                               Campaign Coverage Results
                             </h3>
-                            <button className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100">
-                              Copy Selected URLs to Clipboard
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-600" aria-live="polite">{selectedIds.length} selected</span>
+                              <select
+                                value={statusFilter}
+                                onChange={e => setStatusFilter((e.target.value as 'all'|'verified'|'potential'))}
+                                className="px-2 py-2 text-sm border border-gray-300 rounded-md bg-white"
+                                aria-label="Filter by coverage status"
+                              >
+                                <option value="all">All</option>
+                                <option value="verified">Verified</option>
+                                <option value="potential">Potential</option>
+                              </select>
+                              <input
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="Search URL or title…"
+                                className="px-3 py-2 text-sm border border-gray-300 rounded-md w-56"
+                                aria-label="Search coverage"
+                              />
+                              <button
+                                onClick={copySelectedUrls}
+                                disabled={copyState === 'copying'}
+                                className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 disabled:opacity-50"
+                                data-testid="copy-selected-button"
+                                title={selectedIds.length ? `${selectedIds.length} selected` : 'No selection — copies verified by default'}
+                              >
+                                {copyState === 'copying' ? 'Copying…' : copyState === 'copied' ? 'Copied!' : 'Copy Selected URLs'}
+                              </button>
+                            </div>
                           </div>
                           
                           {/* Results Table */}
@@ -282,27 +494,72 @@ export default function Dashboard() {
                               <thead className="bg-gray-50">
                                 <tr>
                                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    <input type="checkbox" className="rounded" />
+                                    <input
+                                      type="checkbox"
+                                      className="rounded"
+                                      checked={allSelected}
+                                      ref={el => {
+                                        if (el) el.indeterminate = Boolean(someSelected);
+                                      }}
+                                      onChange={toggleSelectAll}
+                                        aria-label="Select all coverage rows"
+                                        aria-checked={someSelected ? 'mixed' : allSelected}
+                                    />
                                   </th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    First Seen
-                                  </th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Page Title
-                                  </th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    URL
-                                  </th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Coverage Status
-                                  </th>
+                                  {[
+                                    { key: 'first_seen', label: 'First Seen' },
+                                    { key: 'page_title', label: 'Page Title' },
+                                    { key: 'url', label: 'URL' },
+                                    { key: 'coverage_status', label: 'Coverage Status' },
+                                    { key: 'link_destination', label: 'Destination' },
+                                  ].map(col => (
+                                    <th
+                                      key={col.key}
+                                        role="columnheader"
+                                      aria-sort={sortField === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                                      onClick={() => {
+                                        const key = col.key as 'first_seen' | 'page_title' | 'url' | 'coverage_status' | 'link_destination';
+                                        if (sortField === key) setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'));
+                                        else { setSortField(key); setSortDir(key === 'first_seen' ? 'desc' : 'asc'); }
+                                      }}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            const key = col.key as 'first_seen' | 'page_title' | 'url' | 'coverage_status' | 'link_destination';
+                                            if (sortField === key) setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'));
+                                            else { setSortField(key); setSortDir(key === 'first_seen' ? 'desc' : 'asc'); }
+                                          }
+                                        }}
+                                        tabIndex={0}
+                                        scope="col"
+                                        className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded ${sortField === col.key ? 'text-blue-700' : 'text-gray-500'}`}
+                                    >
+                                      <span className="inline-flex items-center gap-1">
+                                        {col.label}
+                                        {sortField === col.key && (<span>{sortDir === 'asc' ? '▲' : '▼'}</span>)}
+                                      </span>
+                                    </th>
+                                  ))}
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
-                                {campaignResults.results.map((result) => (
+                                {coverageLoading && (
+                                  <tr>
+                                    <td colSpan={6} className="px-6 py-4 text-sm text-gray-500">
+                                      Loading…
+                                    </td>
+                                  </tr>
+                                )}
+                                {!coverageLoading && pagedCoverage.map((result) => (
                                   <tr key={result.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                      <input type="checkbox" className="rounded" />
+                                      <input
+                                        type="checkbox"
+                                        className="rounded"
+                                        checked={selectedIds.includes(result.id)}
+                                        onChange={() => toggleRow(result.id)}
+                                          aria-label={`Select row for ${result.page_title || result.url}`}
+                                      />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                       {result.first_seen ? new Date(result.first_seen).toLocaleDateString() : 'Unknown'}
@@ -321,12 +578,29 @@ export default function Dashboard() {
                                       </a>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                      <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${
                                         result.coverage_status === 'verified'
                                           ? 'bg-green-100 text-green-800'
                                           : 'bg-blue-100 text-blue-800'
                                       }`}>
-                                        {result.coverage_status === 'verified' ? 'Verified Coverage' : 'Potential Coverage'}
+                                        {result.coverage_status === 'verified' ? (
+                                          <>
+                                            <CheckCircle className="w-3 h-3" /> Verified Coverage
+                                          </>
+                                        ) : (
+                                          <>
+                                            <SearchIcon className="w-3 h-3" /> Potential Coverage
+                                          </>
+                                        )}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                        result.link_destination === 'blog_page' ? 'bg-indigo-100 text-indigo-800' :
+                                        result.link_destination === 'homepage' ? 'bg-slate-100 text-slate-800' :
+                                        result.link_destination === 'product' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800'
+                                      }`}>
+                                        {result.link_destination ? result.link_destination.split('_').map((s: string) => s[0]?.toUpperCase() + s.slice(1)).join(' ') : 'N/A'}
                                       </span>
                                     </td>
                                   </tr>
@@ -334,6 +608,31 @@ export default function Dashboard() {
                               </tbody>
                             </table>
                           </div>
+
+                          {/* Pagination */}
+                          {sortedCoverage.length > pageSize && (
+                            <div className="flex items-center justify-between pt-2">
+                              <div className="text-sm text-gray-600">
+                                Page {page} of {totalPages} • {sortedCoverage.length} items
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                                  disabled={page <= 1}
+                                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                                >
+                                  Previous
+                                </button>
+                                <button
+                                  className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                                  disabled={page >= totalPages}
+                                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                >
+                                  Next
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="text-center py-12">

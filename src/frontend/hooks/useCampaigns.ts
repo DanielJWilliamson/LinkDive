@@ -39,6 +39,7 @@ interface BacklinkResult {
   source_api: string;
   domain_rating?: number;
   confidence_score?: string;
+  link_destination?: string;
 }
 
 interface CampaignResults {
@@ -82,6 +83,19 @@ const campaignApi = {
 
   getCampaignResults: async (id: number): Promise<CampaignResults> => {
   const response = await apiClient.get(`${API_PREFIX}/campaigns/${id}/results`);
+    return response.data;
+  },
+
+  getCoverageDetails: async (
+    id: number,
+    params: { status?: 'all' | 'verified' | 'potential'; search?: string }
+  ): Promise<BacklinkResult[]> => {
+    const response = await apiClient.get(`${API_PREFIX}/campaigns/${id}/coverage/details`, {
+      params: {
+        status: params.status ?? 'all',
+        search: params.search || undefined,
+      },
+    });
     return response.data;
   }
 };
@@ -145,6 +159,11 @@ export function useAnalyzeCampaign() {
     mutationFn: campaignApi.analyzeCampaign,
     onSuccess: (data, campaignId) => {
       queryClient.setQueryData(['campaign-results', campaignId], data);
+      // Refresh coverage details table as analysis may have added rows
+      queryClient.invalidateQueries({
+        queryKey: ['coverage-details', campaignId],
+        exact: false,
+      });
     },
   });
 }
@@ -155,6 +174,18 @@ export function useCampaignResults(id: number | null) {
     queryFn: () => campaignApi.getCampaignResults(id!),
     enabled: !!id,
     staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+export function useCoverageDetails(
+  id: number | null,
+  params: { status?: 'all' | 'verified' | 'potential'; search?: string } = {}
+) {
+  return useQuery({
+    queryKey: ['coverage-details', id, params.status ?? 'all', params.search ?? ''],
+    queryFn: () => campaignApi.getCoverageDetails(id!, params),
+    enabled: !!id,
+    staleTime: 60 * 1000, // 1 minute
   });
 }
 

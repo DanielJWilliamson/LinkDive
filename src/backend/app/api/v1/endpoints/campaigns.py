@@ -4,6 +4,7 @@ Campaign management API endpoints
 from typing import List, Dict
 from datetime import date
 from fastapi import APIRouter, HTTPException, Depends, status, Body
+from fastapi import Query
 from sqlalchemy.orm import Session
 
 from app.models.campaign import (
@@ -29,6 +30,7 @@ router = APIRouter()
 
 from app.core.auth import get_current_user
 from app.utils.datetime_utils import utc_now
+from typing import Optional
 
 def normalize_campaign_payload(campaign_data: CampaignCreate) -> CampaignCreate:
     """Normalize inbound campaign creation payload (trim strings, drop empty array entries).
@@ -256,6 +258,44 @@ async def analyze_campaign(
         potential_coverage=stats.get("potential_coverage", 0)
     )
 
+@router.get("/campaigns/{campaign_id}/coverage/details", summary="List stored coverage items for a campaign")
+async def list_campaign_coverage_details(
+    campaign_id: int,
+    status: str = Query("all", pattern="^(all|verified|potential)$"),
+    search: Optional[str] = Query(None),
+    current_user: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Return stored coverage rows (backlink_results) with optional filtering.
+
+    This powers the Campaign View table and enables simple client-side CSV export.
+    """
+    repo = CampaignRepository(db)
+    campaign = repo.get_campaign_by_id(campaign_id, current_user)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    rows = repo.get_backlink_results(campaign_id, current_user)
+    # Filter in-Python for now; can be pushed down to SQL if needed
+    if status != "all":
+        rows = [r for r in rows if r.coverage_status == status]
+    if search:
+        s = search.lower()
+        rows = [r for r in rows if (r.url and s in r.url.lower()) or (r.page_title and s in r.page_title.lower())]
+    return [
+        {
+            "id": r.id,
+            "url": r.url,
+            "page_title": r.page_title,
+            "first_seen": r.first_seen,
+            "coverage_status": r.coverage_status,
+            "source_api": r.source_api,
+            "domain_rating": r.domain_rating,
+            "confidence_score": str(r.confidence_score) if r.confidence_score else None,
+            "link_destination": r.link_destination,
+        }
+        for r in rows
+    ]
+
 @router.get("/campaigns/{campaign_id}/results", response_model=CampaignResultsResponse)
 async def get_campaign_results(
     campaign_id: int,
@@ -291,7 +331,8 @@ async def get_campaign_results(
                 coverage_status=result.coverage_status,
                 source_api=result.source_api,
                 domain_rating=result.domain_rating,
-                confidence_score=str(result.confidence_score) if result.confidence_score else None
+                confidence_score=str(result.confidence_score) if result.confidence_score else None,
+                link_destination=result.link_destination
             ))
         
         return CampaignResultsResponse(

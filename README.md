@@ -236,6 +236,35 @@ Note: When Live mode is enabled and provider credentials don’t have the requir
 
 ### Backend - API Documentation Overview
 ![LinkDive API Documentation](docs/images/linkdive-api-docs.png)
+### Frontend - Homepage Table View
+![Homepage Table](docs/images/homepage-table.png)
+
+*Compact table listing with Client, Campaign, Start Date, Monitoring Status. Default sort is Start Date (newest first); headers support keyboard toggling and expose aria-sort.*
+
+### Campaign View - Labeled Header Grid
+![Campaign Header Grid](docs/images/campaign-header-grid.png)
+
+*Campaign details header with labeled fields and status pill.*
+
+### Campaign Coverage Results
+![Coverage Table](docs/images/coverage-table.png)
+
+*Coverage results table with selection, copy-to-clipboard, status and destination badges, and sticky toolbar.*
+
+If the images above aren’t present yet, generate them locally:
+
+```powershell
+# In a separate terminal, start the frontend (and backend if not running)
+cd c:\source\TestInts\Kaizen\KaizenTest\src\frontend
+npm run dev
+
+# In another terminal, capture screenshots into docs/images
+cd c:\source\TestInts\Kaizen\KaizenTest\src\frontend
+npx playwright install
+npm run capture:screens
+```
+
+
 
 *Comprehensive FastAPI documentation with interactive testing interface available at http://localhost:8000/docs*
 
@@ -424,6 +453,12 @@ Notes:
 - Development auth: the frontend and Axios client send `X-User-Email` automatically (demo identity) for backend routes.
 - Mock/Live toggle: On the dashboard, use the “Data Source Mode” card to switch between Mock and Live. If provider credentials are missing scope/subscription, the UI shows an explainer and the system safely falls back to Mock.
 - Seeded/example data: A few example campaigns are visible in Mock mode to help you explore the UI quickly.
+
+### UI tips
+- Homepage view toggle: In the top-left of the dashboard, switch between Cards and Table. The choice persists via `?view=` and localStorage.
+- Campaigns table: Columns are Client, Campaign, Start Date, Monitoring Status. Default sort is Start Date (newest first). Click a header or press Enter/Space when focused to toggle sorting. The current sort is announced via `aria-sort`.
+- Campaign view header: Labeled grid shows Client Name, Campaign Name, Start Date, Monitoring Status, and Client Domain. The status pill reflects Live/Paused.
+- Coverage table: Select rows and click “Copy Selected URLs” to copy unique URLs. If no rows are selected, verified coverage is copied by default. Sticky toolbar includes selection count, status filter, and search.
 
 ## 🔐 Pre-public Repo Security Checklist
 
